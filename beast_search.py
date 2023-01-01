@@ -5,7 +5,7 @@ from .MyLibs.POENinja import POENinja
 
 
 parser = ArgumentParser()
-parser.add_argument("--limit", type=int, default=5, help="Minimum value a beast must be worth to be searched for")
+parser.add_argument("--limit", type=int, default=10, help="Minimum value a beast must be worth to be searched for")
 parser.add_argument("--harvest", action="store_true", help="If harvest beasts should be included")
 args = parser.parse_args()
 
