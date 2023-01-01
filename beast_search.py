@@ -10,8 +10,8 @@ parser.add_argument("--harvest", action="store_true", help="If harvest beasts sh
 args = parser.parse_args()
 
 
-beasts = POENinja.get_beasts("Sanctum")
-beasts = [beast for beast in beasts if beasts[beast] >= args.limit]
+db = POENinja.get_beasts("Sanctum")
+beasts = [beast for beast in db if db[beast] >= args.limit]
 if not args.harvest: beasts = [beast for beast in beasts if not beast.startswith("Wild")]
 if not args.harvest: beasts = [beast for beast in beasts if not beast.startswith("Vivid")]
 if not args.harvest: beasts = [beast for beast in beasts if not beast.startswith("Primal")]
@@ -27,7 +27,8 @@ add_hotkey("end", clear)
 def search():
     global beasts
     send("ctrl+f")
-    write(beasts.pop())
+    beast = beasts.pop()
+    write(f"{beast}|c={db[beast]}")
     send("enter")
 
 
@@ -37,3 +38,4 @@ add_hotkey("shift+f1", search)
 
 while beasts:
     sleep(0.01)
+sleep(0.1)
