@@ -1,11 +1,12 @@
 from requests import get
-from typing import Set
+from typing import List, Set
 import re
 import sys
 
 
 # Constant values
 treshold = 1 if len(sys.argv) < 2 else float(sys.argv[1])
+LIMIT = 250 # POE regex character limit
 DEBUGGER = False
 
 # Print Debug info when DEBUG flag is active
@@ -25,65 +26,44 @@ prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 sell = [name for name, value in prices.items() if value < treshold]
 keep = [name for name, value in prices.items() if value >= treshold]
 
-# Get the shorter list
-highlight, exclude, negate = (sell, keep, False) if len(sell) <= len(keep) else (keep, sell, True)
-
-# Concatenate all the names of the scarabs to exclude so it is easer to check if a sub-string is present
-full_exclude = ",".join(exclude)
-
-# Save all the regexes that uniquely select the scarabs to keep
-regexes = {}
-
-# Get the shortest string in the name of each highlight scarab that is not present in the names of the scarabs to exclude
-for name in highlight:
-    for size in range(len("Scarab"), len(name)+1):
-        for start in range(len(name)-size+1):
-            if name[start:start+size] not in full_exclude and "Scarab" in name[start:start+size]:
-                regexes.setdefault(name, []).append(name[start:start+size])
-    if name not in regexes: raise Exception(f"No regex found for '{name}'")
-
-# Check how many scarabs would be selected by each regex
-regex_count = {}
-for name, data in regexes.items():
-    for regex in data:
-        regex_count[regex] = regex_count.get(regex, 0) + 1
-
-# Assign a weight/score for each regex based on how many scarabs they select and how long they are
-regex_score = {regex: len(regex) - count - (5 if regex.startswith("^Scarab") or regex.startswith("Scarab") or regex.endswith("Scarab") or regex.endswith("Scarab$") else 0) for regex, count in regex_count.items()}
-
-# Find the best regex for all scarabs
-# This is done by finding the scarab with the worst best regex and fixing that
-# Then all the other scarabs that also have that regex will use that regex
-# Repeat untill all scarabs have regexes
-to_assing = highlight[:]
-regex_assigns = {}
-while to_assing:
-    regex_tmp = {name: min(regexes[name], key=lambda x: regex_score[x]) for name in to_assing}
-    worst_name, worst_regex = max(regex_tmp.items(), key=lambda x: regex_score[x[1]])
-    for name in to_assing[:]:
-        if worst_regex in regexes[name]:
-            regex_assigns[name] = worst_regex
-            to_assing.remove(name)
-
-# Uniquefy the regexes to avoid repetition
-all_regexes = set(regex_assigns.values())
-
-# Group the regexes based on if they involve the start of the line or not
-full_regexes = []
-start_regexes = []
-midle_regexes = []
-end_regexes = []
-for regex in all_regexes:
-    if regex.startswith("^") and regex.endswith("$"): full_regexes.append(regex)
-    elif regex.startswith("^"): start_regexes.append(regex)
-    elif regex.endswith("$"): end_regexes.append(regex)
-    else: midle_regexes.append(regex)
+def get_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
+    # Concatenate all the names of the scarabs to exclude so it is easer to check if a sub-string is present
+    full_exclude = ",".join(excludes)
+    # Save all the regexes that uniquely select the scarabs to keep
+    regexes = {}
+    # Get the shortest string in the name of each highlight scarab that is not present in the names of the scarabs to exclude
+    for name in includes:
+        for size in range(len("Scarab") + 2, len(name) + 1):
+            for start in range(len(name) - size + 1):
+                match = name[start:start+size]
+                if "Scarab" in match and match not in full_exclude:
+                    regexes.setdefault(name, []).append(match)
+        if name not in regexes: raise Exception(f"No regex found for '{name}'")
+    # Check how many scarabs would be selected by each regex
+    regex_count = {}
+    for name, data in regexes.items():
+        for regex in data:
+            regex_count[regex] = regex_count.get(regex, 0) + 1
+    # Assign a weight/score for each regex based on how many scarabs they select and how long they are
+    regex_score = {regex: len(regex) - count - (5 if regex.startswith("^Scarab") or regex.startswith("Scarab") or regex.endswith("Scarab") or regex.endswith("Scarab$") else 0) for regex, count in regex_count.items()}
+    # Find the best regex for all scarabs by finding the scarab with the worst best regex and setting that as the regex for that scarab
+    # Then all the other scarabs that also have that regex will use that regex, repeat untill all scarabs have regexes
+    to_assing = includes[:]
+    regex_assigns = {}
+    while to_assing:
+        regex_tmp = {name: min(regexes[name], key=lambda x: regex_score[x]) for name in to_assing}
+        _, worst_regex = max(regex_tmp.items(), key=lambda x: regex_score[x[1]])
+        for name in to_assing[:]:
+            if worst_regex in regexes[name]:
+                regex_assigns[name] = worst_regex
+                to_assing.remove(name)
+    # Uniquefy the regexes to avoid repetition
+    return set(regex_assigns.values())
 
 # Create the full regex string based on the individual regexes
-# "!^(<full lines>|(<starts without Scarab>|Scarab (<starts without "of">|of (<starts with "of">))).*)|.*(<midle without Scarab at the start or the end>|Scarab (<>|of ())|<> Scarab).*|.*(<>|() Scarab)$"
 # "!^(r1|(r21|Scarab (r221|of (r222))).*)|.*(r31|Scarab (r321|of (r322))|r33 Scarab|r34 Scarab ).*|.*(r41|(r42) Scarab)$"
-def gen_regex(all_regexes: Set[str], negate: bool) -> str:
-    regexes = list(all_regexes)
+def format_regex(items: Set[str], negate: bool) -> str:
+    regexes = list(items)
     DEBUG(sorted(regexes))
     # Regexes that match a full line
     r1 = [item for item in regexes if item.startswith("^") and item.endswith("$")]
@@ -163,26 +143,29 @@ def gen_regex(all_regexes: Set[str], negate: bool) -> str:
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
     return regex
 
-#regex = gen_regex(all_regexes, negate)
+# Calculate the total regex lenght for highlighting the desired scarabs and highlighting the not of the undisired regexes
+normal_regexes = get_regexes(sell, keep)
+normal_regex = format_regex(normal_regexes, False)
+inverted_regexes = get_regexes(keep, sell)
+inverted_regex = format_regex(inverted_regexes, True)
 
+# Select the regexes with the smallest total characters
+regexes, negate = (normal_regexes, False) if len(normal_regex) <= len(inverted_regex) else (inverted_regexes, True)
+
+# Print the regex in parts to abide by the POE regex character limit
 print("\033[31;1mRegex to Paste:\033[0m")
-
 last_regexes = []
-for reg in all_regexes:
-     test_reg = gen_regex(last_regexes + [reg], negate)
+for reg in regexes:
+     test_reg = format_regex(set(last_regexes + [reg]), negate)
      re.compile(test_reg)
-     if len(test_reg) > 250:
-         regex = gen_regex(last_regexes, negate)
+     if len(test_reg) > LIMIT:
+         regex = format_regex(set(last_regexes), negate)
          re.compile(regex)
          print(f"\033[33;1m{regex}\033[0m")
          last_regexes = [reg]
      else:
          last_regexes.append(reg)
-
 if last_regexes:
-    regex = gen_regex(last_regexes, negate)
+    regex = format_regex(set(last_regexes), negate)
     re.compile(regex)
-    print(f"\033[33;1m{regex}")
-
-print("\033[31;1m----------------\033[0m")
-#print(f"Regex character len: {len(regex)}.\033[0m")
+    print(f"\033[33;1m{regex}\033[0m")
