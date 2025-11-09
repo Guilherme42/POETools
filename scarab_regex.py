@@ -1,20 +1,31 @@
 from requests import get
 from typing import List, Set
+import pprint as pp
 import re
-import sys
+import argparse
 
-
-if "-h" in sys.argv:
-    print("Script to generate suitable regex strings to highlight vendorable scarabs.\nThe first argument can be used to set a custom threshold, in chaos.")
-    exit(0)
-
-# Constant values
-treshold = 1 if len(sys.argv) < 2 else float(sys.argv[1])
-LIMIT = 250 # POE regex character limit
-DEBUGGER = False
+ap = argparse.ArgumentParser(description="Script to generate suitable regex strings to highlight vendorable scarabs.\nThe first argument can be used to set a custom threshold, in chaos.")
+ap.add_argument("-t", "--treshold", type=float, action="store", default=1, help="Cuttoff value for scarab price. Any below this will be highlighted")
+ap.add_argument("-l", "--limit", type=int, action="store", default=250, help="")
+ap.add_argument("-d", "--debug", action="store_true", help="Enables debug session", default=False)
+ap.add_argument("-dg", action="store", required=False, default=".")
+ap.add_argument("-fk", "--force-keep", action="store", nargs="*", required=False, default=[])
+args = ap.parse_args()
 
 # Print Debug info when DEBUG flag is active
-DEBUG = lambda x: print(x) if DEBUGGER else None
+DEBUGGER = args.debug
+
+DEBUG = lambda x: pp.pprint(x) if DEBUGGER else None
+
+def DEBUG_GREP(grepstr: str):
+    if args.debug:
+        pass
+
+DEBUG("---------> Debug session active <----------")
+
+# Constant values
+treshold = args.treshold
+LIMIT = int(args.limit)
 
 # Dynamically get the name of the current league
 league = get("https://poe.ninja/poe1/api/data/index-state").json()["economyLeagues"][0]["name"]
@@ -27,11 +38,12 @@ names = {id: f"^{name}$" for id, name in names.items()}
 prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 
 # Find the scarabs that are too cheap to be worth selling
-sell = [name for name, value in prices.items() if value < treshold]
-keep = [name for name, value in prices.items() if value >= treshold]
+forced  = [name for name, value in prices.items() if any(re.search(p, name[1:-1]) is not None for p in args.force_keep)]
+sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
+keep    = [name for name, value in prices.items() if name not in sell]
 
-def get_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
-    # Concatenate all the names of the scarabs to exclude so it is easer to check if a sub-string is present
+def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
+    # Concatenate all the names of the scarabs to exclude so it is easier to check if a sub-string is present
     full_exclude = ",".join(excludes)
     # Save all the regexes that uniquely select the scarabs to keep
     regexes = {}
@@ -43,6 +55,12 @@ def get_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
                 if "Scarab" in match and match not in full_exclude:
                     regexes.setdefault(name, []).append(match)
         if name not in regexes: raise Exception(f"No regex found for '{name}'")
+    DEBUG(regexes)
+    return regexes
+
+def get_best_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
+    # Create dict with all possible regexes for each scarab
+    regexes = get_all_regexes(includes=includes, excludes=excludes)
     # Check how many scarabs would be selected by each regex
     regex_count = {}
     for name, data in regexes.items():
@@ -63,6 +81,23 @@ def get_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
                 to_assing.remove(name)
     # Uniquefy the regexes to avoid repetition
     return set(regex_assigns.values())
+
+# Validates if the regex created will highlight any scarabs that should be kept
+def validate_regex(regex: str, scarabs_to_be_kept: List[str]) -> bool:
+    # Clean regex str to use with python's re
+    DEBUG(f"before: {regex}")
+    regex = regex.replace('"', '')
+    invert_return = regex[0] == '!'
+    regex = regex[1:] if invert_return else regex
+    DEBUG(f"after: {regex}")
+
+    # Remove all ^ and $ from scarab names.
+    keep_pre = [name.replace('^','').replace('$','') for name in scarabs_to_be_kept]
+    DEBUG(keep_pre)
+    # Filter list to see if there are any scarabs that should be kept that are being highlighted erroneously.
+    keep = [name for name in keep_pre if re.search(regex, name)]
+    DEBUG(keep)
+    return len(keep) == len(keep_pre)
 
 # Create the full regex string based on the individual regexes
 # "!^(r1|(r21|Scarab (r221|of (r222))).*)|.*(r31|Scarab (r321|of (r322))|r33 Scarab|r34 Scarab ).*|.*(r41|(r42) Scarab)$"
@@ -142,15 +177,16 @@ def format_regex(items: Set[str], negate: bool) -> str:
     regex_r42 = f"{'(' if len(r42) > 1 else ''}{'|'.join(r42)}{')' if len(r42) > 1 else ''} Scarab" if r42 else ""
     regex_r4  = f"{regex_r41}{'|' if regex_r41 and regex_r42 else ''}{regex_r42}"
     DEBUG(regex_r4)
-    regex = f"{regex_r1}|{regex_r2}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_start and regex_r3 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
+    regex = f"{regex_r1}|{regex_r2}{'.*' if has_end and regex_r2 else ''}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_start and regex_r3 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
     DEBUG(regex)
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
     return regex
 
+
 # Calculate the total regex lenght for highlighting the desired scarabs and highlighting the not of the undisired regexes
-normal_regexes = get_regexes(sell, keep)
+normal_regexes = get_best_regexes(sell, keep)
 normal_regex = format_regex(normal_regexes, False)
-inverted_regexes = get_regexes(keep, sell)
+inverted_regexes = get_best_regexes(keep, sell)
 inverted_regex = format_regex(inverted_regexes, True)
 
 # Select the regexes with the smallest total characters
@@ -173,3 +209,14 @@ if last_regexes:
     regex = format_regex(set(last_regexes), negate)
     re.compile(regex)
     print(f"\033[33;1m{regex}\033[0m")
+print("\033[31;1m---------------------\033[0m")
+
+# Sanity check that shows which scarabs are forced to be kept. 
+# Useful to debug regex matches
+if forced:
+    forced = [f[1:-1] for f in forced]
+    print("\033[34;1mScarabs forced to be kept:")
+    print("\033[32m-","\n-".join(forced), "\033[0m\n", sep="")
+
+DEBUG(sorted(prices.items(),key = lambda x : x[1]))
+# validate_regex(regex, keep)
