@@ -4,6 +4,10 @@ import re
 import sys
 
 
+if "-h" in sys.argv:
+    print("Script to generate suitable regex strings to highlight vendorable scarabs.\nThe first argument can be used to set a custom threshold, in chaos.")
+    exit(0)
+
 # Constant values
 treshold = 1 if len(sys.argv) < 2 else float(sys.argv[1])
 LIMIT = 250 # POE regex character limit
