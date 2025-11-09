@@ -4,12 +4,12 @@ import pprint as pp
 import re
 import argparse
 
-ap = argparse.ArgumentParser(description="Script to generate suitable regex strings to highlight vendorable scarabs.\nThe first argument can be used to set a custom threshold, in chaos.")
+ap = argparse.ArgumentParser(description="Script to generate suitable regex strings to highlight vendorable scarabs.")
 ap.add_argument("-t", "--treshold", type=float, action="store", default=1, help="Cuttoff value for scarab price. Any below this will be highlighted")
 ap.add_argument("-l", "--limit", type=int, action="store", default=250, help="")
 ap.add_argument("-d", "--debug", action="store_true", help="Enables debug session", default=False)
 ap.add_argument("-dg", action="store", required=False, default=".")
-ap.add_argument("-fk", "--force-keep", action="store", nargs="*", required=False, default=[])
+ap.add_argument("-fk", "--force-keep", action="store", nargs="*", required=False, default=[], help="List of scarabs to force to be kept. Case sensitive, accepts regex.")
 args = ap.parse_args()
 
 # Print Debug info when DEBUG flag is active
