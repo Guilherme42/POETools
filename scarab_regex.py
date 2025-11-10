@@ -43,13 +43,14 @@ forced  = [name for name, value in prices.items() if any(re.search(p.lower(), na
 sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
 keep    = [name for name, value in prices.items() if name not in sell]
 
-def print_prices(price_list: dict):
+def print_prices(price_list: dict, force_keep: list):
     print(f"\033[31;4mPrice list:\033[0m")
     lower_tres = 0.9 * treshold
     upper_tres = 1.1 * treshold
+
     # Control Constants
     RED = '\033[31m'
-    YEL = '\033[33m'
+    FORCED = '\033[34;1mforced - '
     GRE = '\033[32m'
     END = '\033[0m'
     longest_scarab_name_len = len(max(price_list.keys(), key=lambda x: len(x)))
@@ -58,17 +59,14 @@ def print_prices(price_list: dict):
     price_list = sorted(price_list.items(), key=lambda x: x[1])
     
     for name, price in price_list:
-        if price <= lower_tres:
-            color = RED
-        elif price >= upper_tres:
+        if price >= upper_tres:
             color = GRE
+        elif any(fk in name for fk in force_keep):
+            color = FORCED
         else:
-            color = YEL
+            color = RED
         print(f"{name.replace("^","").replace("$",""): <{longest_scarab_name_len}} {color}{price}c{END}")
-    # clean_prices = {pricekey.replace("^","").replace("$",""):value for pricekey, value in prices.items()}
-    # pp.pprint(clean_prices)
     print("\033[31;1m---------------------\033[0m")
-
 
 def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
     # Concatenate all the names of the scarabs to exclude so it is easier to check if a sub-string is present
@@ -260,7 +258,4 @@ if forced:
     print("\033[32m-","\n-".join(forced), "\033[0m\n", sep="")
 
 if args.print_prices:
-    print_prices(prices)
-
-# PDEBUG(sorted(prices.items(),key = lambda x : x[1]))
-# validate_regex(regex, keep)
+    print_prices(prices, forced)
