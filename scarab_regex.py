@@ -253,7 +253,7 @@ def format_regex(items: Set[str], negate: bool) -> str:
     regex_r4  = f"{regex_r41}{'|' if regex_r41 and regex_r42 else ''}{regex_r42}"
     DEBUG("regex_r4:")
     DEBUG(regex_r4)
-    regex = f"{regex_r1}|{regex_r2}{'.*' if has_end and regex_r2 else ''}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_end and regex_r4 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
+    regex = f"{regex_r1}|{regex_r2}{'.*' if has_end and regex_r2 else ''}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_end and regex_r3 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
     DEBUG("regex:")
     DEBUG(regex)
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
