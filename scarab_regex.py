@@ -9,6 +9,7 @@ ap.add_argument("-t", "--treshold", type=float, action="store", default=1, help=
 ap.add_argument("-l", "--limit", type=int, action="store", default=250, help="")
 ap.add_argument("-d", "--debug", action="store_true", help="Enables debug session", default=False)
 ap.add_argument("-p", "--print_prices", action="store_true", default=False, help="Prints latest price list.")
+ap.add_argument("-f", "--flip", action="store", type=int, help="Prints a regex with the cheapest N scarabs to put into Faustus' search bar to flip them.", default=None)
 ap.add_argument("-fk", "--force-keep", action="store", nargs="*", required=False, default=[], help="List of scarabs to force to be kept. Case insensitive, accepts regex.")
 args = ap.parse_args()
 
@@ -27,6 +28,13 @@ DEBUG("---------> Debug session active <----------")
 # Constant values
 treshold = args.treshold
 LIMIT = int(args.limit)
+RED     = '\033[31m'
+REDB    = '\033[31;1m'
+REG     = '\033[33;1m'
+GRE     = '\033[32m'
+FORCED  = '\033[34;1mforced - '
+NFORCED = '\033[34;1m'
+END     = '\033[0m'
 
 # Dynamically get the name of the current league
 league = get("https://poe.ninja/poe1/api/data/index-state").json()["economyLeagues"][0]["name"]
@@ -42,22 +50,21 @@ prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
 sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
 keep    = [name for name, value in prices.items() if name not in sell]
+forced = [f[1:-1] for f in forced]
+DEBUG(forced)
+DEBUG(sell)
+DEBUG(keep)
 
-def print_prices(price_list: dict, force_keep: list):
+def print_prices(price_list: dict, force_keep: list = []) -> list:
     print(f"\033[31;4mPrice list:\033[0m")
 
     # Control Constants
-    RED = '\033[31m'
-    FORCED = '\033[34;1mforced - '
-    NFORCED = '\033[34;1m'
-    GRE = '\033[32m'
-    END = '\033[0m'
     longest_scarab_name_len = len(max(price_list.keys(), key=lambda x: len(x)))
     
     # Sort price list from cheapest to most expensive
     price_list = sorted(price_list.items(), key=lambda x: x[1])
-    
-    for name, price in price_list:
+    price_list_clean = [[name.replace("^","").replace("$",""), price] for name, price in price_list]
+    for name, price in price_list_clean:
         if price >= treshold:
             color = GRE
             ncolor = END
@@ -68,7 +75,18 @@ def print_prices(price_list: dict, force_keep: list):
             color = RED
             ncolor = END
         print(f"{ncolor}{name.replace("^","").replace("$",""): <{longest_scarab_name_len}}{END} {color}{price}c{END}")
-    print("\033[31;1m---------------------\033[0m")
+    print(f"{REDB}---------------------{END}")
+    return price_list
+
+def get_cheapest_n(price_list: dict, N: int) -> str:
+    sorted_prices   = sorted(price_list.items(), key=lambda x: x[1])
+    to_vendor       = [name for name, price in sorted_prices[:N]]
+    to_block        = [name for name, price in sorted_prices if name not in to_vendor]
+
+    positive_reg = format_regex(get_best_regexes(to_vendor, to_block), False)
+    print(f"{RED}cheapest {NFORCED}{N}{END} {RED}scarabs:{END}")
+    print(f"{REG}{positive_reg}{END}")
+    print_prices({it: price_list[it] for it in price_list if it in to_vendor})
 
 def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
     # Concatenate all the names of the scarabs to exclude so it is easier to check if a sub-string is present
@@ -213,6 +231,9 @@ def format_regex(items: Set[str], negate: bool) -> str:
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
     return regex
 
+# Prints price list
+if args.print_prices:
+    print_prices(prices, forced)
 
 # Calculate the total regex lenght for highlighting the desired scarabs and highlighting the not of the undisired regexes
 normal_regexes = get_best_regexes(sell, keep)
@@ -250,14 +271,14 @@ if last_regexes:
     text_to_print += f"\033[33;1m{regex}\033[0m\n"
 text_to_print += "\033[31;1m---------------------\033[0m"
 
-print(text_to_print)
+print(f"\n{text_to_print}")
 
 # Sanity check that shows which scarabs are forced to be kept. 
 # Useful to debug regex matches
 if forced:
-    forced = [f[1:-1] for f in forced]
     print("\033[34;1mScarabs forced to be kept:")
     print("\033[32m-","\n-".join(forced), "\033[0m\n", sep="")
 
-if args.print_prices:
-    print_prices(prices, forced)
+if args.flip:
+    print("")
+    get_cheapest_n(price_list=prices, N=args.flip)
