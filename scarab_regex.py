@@ -30,6 +30,7 @@ treshold = args.treshold
 LIMIT = int(args.limit)
 RED     = '\033[31m'
 REDB    = '\033[31;1m'
+REDBB    = '\033[31;1,4m'
 REG     = '\033[33;1m'
 GRE     = '\033[32m'
 FORCED  = '\033[34;1mforced - '
@@ -47,13 +48,30 @@ names = {id: f"^{name.lower()}$" for id, name in names.items()}
 prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 
 # Find the scarabs that are too cheap to be worth selling
-forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
-sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
-keep    = [name for name, value in prices.items() if name not in sell]
-forced = [f[1:-1] for f in forced]
-DEBUG(forced)
-DEBUG(sell)
-DEBUG(keep)
+# forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
+# sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
+# keep    = [name for name, value in prices.items() if name not in sell]
+# forced  = [f[1:-1] for f in forced]
+# DEBUG(forced)
+# DEBUG(sell)
+# DEBUG(keep)
+
+# Find the scarabs that are too cheap to be worth selling
+def update_lists(prices: dict, forced: list) -> List[list]:
+    forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
+    sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
+    keep    = [name for name, value in prices.items() if name not in sell]
+    forced  = [f[1:-1] for f in forced]
+    DEBUG("forced:")    
+    DEBUG(forced)
+    DEBUG("sell:")
+    DEBUG(sell)
+    DEBUG("keep:")
+    DEBUG(keep)
+
+
+    return [sell, keep, forced]
+sell, keep, forced = update_lists(prices=prices, forced=args.force_keep)
 
 def print_prices(price_list: dict, force_keep: list = []) -> list:
     print(f"\033[31;4mPrice list:\033[0m")
@@ -84,9 +102,14 @@ def get_cheapest_n(price_list: dict, N: int) -> str:
     to_block        = [name for name, price in sorted_prices if name not in to_vendor]
 
     positive_reg = format_regex(get_best_regexes(to_vendor, to_block), False)
+    if not validate_regex(positive_reg, keep):
+        print("Regex might be broken, highlighting some wrong scarabs. Please double check.")
+    
     print(f"{RED}cheapest {NFORCED}{N}{END} {RED}scarabs:{END}")
     print(f"{REG}{positive_reg}{END}")
     print_prices({it: price_list[it] for it in price_list if it in to_vendor})
+    
+        
 
 def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
     # Concatenate all the names of the scarabs to exclude so it is easier to check if a sub-string is present
@@ -210,38 +233,42 @@ def format_regex(items: Set[str], negate: bool) -> str:
     has_start = len(r1 + r21 + r221 + r222) > 0
     has_end = len(r41 + r42) > 0
     regex_r1 = f"{'|'.join(r1)}"
+    DEBUG("regex_r1:")
     DEBUG(regex_r1)
     regex_r21 = f"{'|'.join(r21)}"
     regex_r22 = f"scarab {'(' if r221 and len(r221 + r222) > 1 else ''}{'|'.join(r221)}{'|' if bool(r221) + bool(r222) > 1 else ''}of {'(' if len(r222) > 1 else ''}{'|'.join(r222)}{')' if len(r222) > 1 else ''}{')' if r221 and len(r221 + r222) > 1 else ''}" if r221 or r222 else ""
     regex_r2  = f"{regex_r21}{'|' if regex_r21 and regex_r22 else ''}{regex_r22}"
+    DEBUG("regex_r2:")
     DEBUG(regex_r2)
     regex_r31 = f"{'|'.join(r31)}"
     regex_r32 = f"scarab {'(' if r321 and len(r321 + r322) > 1 else ''}{'|'.join(r321)}{'|' if r321 and r322 else ''}of {'(' if len(r322) > 1 else ''}{'|'.join(r322)}{')' if len(r322) > 1 else ''}{')' if r321 and  len(r321 + r322) > 1 else ''}" if r321 or r322 else ""
     regex_r33 = f"{'(' if len(r33) > 1 else ''}{'|'.join(r33)}{')' if len(r33) > 1 else ''} scarab" if r33 else ""
     regex_r34 = f"{'(' if len(r34) > 1 else ''}{'|'.join(r34)}{')' if len(r34) > 1 else ''} scarab " if r34 else ""
     regex_r3  = f"{'(' if bool(regex_r31) + bool(regex_r32) + bool(regex_r33) + bool(regex_r34) > 1 else ''}{regex_r31}{'|' if regex_r31 and (regex_r32 or regex_r33 or regex_r34) else ''}{regex_r32}{'|' if (regex_r31 or regex_r32) and (regex_r33 or regex_r34) else ''}{regex_r33}{'|' if (regex_r31 or regex_r32 or regex_r33) and regex_r34 else ''}{regex_r34}{')' if bool(regex_r31) + bool(regex_r32) + bool(regex_r33) + bool(regex_r34) > 1 else ''}"
-    regex_r3  = re.sub(r"\|+", r"|", regex_r3)
+    regex_r3  = re.sub(r"\|+", r"|", regex_r3)    
+    DEBUG("regex_r3:")
     DEBUG(regex_r3)
     regex_r41 = f"{'|'.join(r41)}"
     regex_r42 = f"{'(' if len(r42) > 1 else ''}{'|'.join(r42)}{')' if len(r42) > 1 else ''} scarab" if r42 else ""
     regex_r4  = f"{regex_r41}{'|' if regex_r41 and regex_r42 else ''}{regex_r42}"
+    DEBUG("regex_r4:")
     DEBUG(regex_r4)
-    regex = f"{regex_r1}|{regex_r2}{'.*' if has_end and regex_r2 else ''}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_start and regex_r3 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
+    regex = f"{regex_r1}|{regex_r2}{'.*' if has_end and regex_r2 else ''}|{'.*' if has_start and regex_r3 else ''}{regex_r3}{'.*' if has_end and regex_r4 else ''}|{'.*' if has_start and regex_r4 else ''}{regex_r4}".strip("|")
+    DEBUG("regex:")
     DEBUG(regex)
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
     return regex
-
 # Prints price list
 if args.print_prices:
     print_prices(prices, forced)
 
-# Calculate the total regex lenght for highlighting the desired scarabs and highlighting the not of the undisired regexes
+# Calculate the total regex lenght for highlighting the desired scarabs and highlighting the not of the undesired regexes
 normal_regexes = get_best_regexes(sell, keep)
 normal_regex = format_regex(normal_regexes, False)
 inverted_regexes = get_best_regexes(keep, sell)
 inverted_regex = format_regex(inverted_regexes, True)
 
-# Select the regexes with the smallest total characters
+# Select the regexes with the smallest total characters count
 regexes, negate = (normal_regexes, False) if len(normal_regex) <= len(inverted_regex) else (inverted_regexes, True)
 
 text_to_print = "\033[31;1mRegex to Paste:\033[0m\n"
@@ -266,7 +293,8 @@ if last_regexes:
     regex = format_regex(set(last_regexes), negate)
     re.compile(regex)
     if not validate_regex(regex, keep):
-        print("\033[31;1;5m---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!\033[0m")
+        print(f"{REDB}---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!{END}")
+        print(f"{NFORCED}broken regex: {regex}{END}")
         quit()
     text_to_print += f"\033[33;1m{regex}\033[0m\n"
 text_to_print += "\033[31;1m---------------------\033[0m"
