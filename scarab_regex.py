@@ -15,7 +15,8 @@ args = ap.parse_args()
 # Print Debug info when DEBUG flag is active
 DEBUGGER = args.debug
 
-DEBUG = lambda x: pp.pprint(x) if DEBUGGER else None
+DEBUG = lambda x: print(x) if DEBUGGER else None
+PDEBUG = lambda x: pp.pprint(x) if DEBUGGER else None
 
 def DEBUG_GREP(grepstr: str):
     if args.debug:
@@ -32,7 +33,7 @@ league = get("https://poe.ninja/poe1/api/data/index-state").json()["economyLeagu
 
 # Get the updated price of each scarab in chaos
 db = get(f"https://poe.ninja/poe1/api/economy/exchange/current/overview?league={league}&type=Scarab").json()
-DEBUG(db)
+PDEBUG(db)
 names = {item["id"]: item["name"] for item in db["items"]}
 names = {id: f"^{name.lower()}$" for id, name in names.items()}
 prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
@@ -55,7 +56,7 @@ def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
                 if "scarab" in match and match not in full_exclude:
                     regexes.setdefault(name, []).append(match)
         if name not in regexes: raise Exception(f"No regex found for '{name}'")
-    DEBUG(regexes)
+    PDEBUG(regexes)
     return regexes
 
 def get_best_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
@@ -83,27 +84,30 @@ def get_best_regexes(includes: List[str], excludes: List[str]) -> Set[str]:
     return set(regex_assigns.values())
 
 # Validates if the regex created will highlight any scarabs that should be kept
-def validate_regex(regex: str, scarabs_to_be_kept: List[str]) -> bool:
+def validate_regex(orig_regex: str, scarabs_to_be_kept: List[str]) -> bool:
     # Clean regex str to use with python's re
-    DEBUG(f"before: {regex}")
-    regex = regex.replace('"', '')
-    invert_return = regex[0] == '!'
-    regex = regex[1:] if invert_return else regex
-    DEBUG(f"after: {regex}")
+    regex = orig_regex.replace('"', '')
+    highlight_keep_scarabs = regex[0] == '!'
+    regex = regex[1:] if highlight_keep_scarabs else regex
 
     # Remove all ^ and $ from scarab names.
     keep_pre = [name.replace('^','').replace('$','') for name in scarabs_to_be_kept]
-    DEBUG(keep_pre)
+    PDEBUG(keep_pre)
     # Filter list to see if there are any scarabs that should be kept that are being highlighted erroneously.
     keep = [name for name in keep_pre if re.search(regex, name)]
-    DEBUG(keep)
-    return len(keep) == len(keep_pre)
+    PDEBUG(keep)
+
+    DEBUG("Both lists should be the same length if original regex starts with '!' otherwise, the final list's length should be 0.")
+    DEBUG(f"Len1: \033[31m{len(keep_pre)}\033[0m, len2: \033[31m{len(keep)}\033[0m. Has negation?: \033[31m{highlight_keep_scarabs}\033[0m")
+    DEBUG(f"Original regex:\n\033[34m{orig_regex}\033[0m")
+    # returns True if there are no valuable scarabs being falsely appointed to be removed 
+    return len(keep) == len(keep_pre) if highlight_keep_scarabs else len(keep) == 0
 
 # Create the full regex string based on the individual regexes
 # "!^(r1|(r21|scarab (r221|of (r222))).*)|.*(r31|scarab (r321|of (r322))|r33 scarab|r34 scarab ).*|.*(r41|(r42) scarab)$"
 def format_regex(items: Set[str], negate: bool) -> str:
     regexes = list(items)
-    DEBUG(sorted(regexes))
+    PDEBUG(sorted(regexes))
     # Regexes that match a full line
     r1 = [item for item in regexes if item.startswith("^") and item.endswith("$")]
     for item in r1: regexes.remove(item)
@@ -192,8 +196,10 @@ inverted_regex = format_regex(inverted_regexes, True)
 # Select the regexes with the smallest total characters
 regexes, negate = (normal_regexes, False) if len(normal_regex) <= len(inverted_regex) else (inverted_regexes, True)
 
+text_to_print = "\033[31;1mRegex to Paste:\033[0m\n"
+
 # Print the regex in parts to abide by the POE regex character limit
-print("\033[31;1mRegex to Paste:\033[0m")
+# print("\033[31;1mRegex to Paste:\033[0m")
 last_regexes = []
 for reg in regexes:
      test_reg = format_regex(set(last_regexes + [reg]), negate)
@@ -201,15 +207,23 @@ for reg in regexes:
      if len(test_reg) > LIMIT:
          regex = format_regex(set(last_regexes), negate)
          re.compile(regex)
-         print(f"\033[33;1m{regex}\033[0m")
+         if not validate_regex(regex, keep):
+             print("\033[31;1;5m---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!\033[0m")
+             quit()
+         text_to_print += f"\033[33;1m{regex}\033[0m\n"
          last_regexes = [reg]
      else:
          last_regexes.append(reg)
 if last_regexes:
     regex = format_regex(set(last_regexes), negate)
     re.compile(regex)
-    print(f"\033[33;1m{regex}\033[0m")
-print("\033[31;1m---------------------\033[0m")
+    if not validate_regex(regex, keep):
+        print("\033[31;1;5m---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!\033[0m")
+        quit()
+    text_to_print += f"\033[33;1m{regex}\033[0m\n"
+text_to_print += "\033[31;1m---------------------\033[0m"
+
+print(text_to_print)
 
 # Sanity check that shows which scarabs are forced to be kept. 
 # Useful to debug regex matches
@@ -218,5 +232,5 @@ if forced:
     print("\033[34;1mScarabs forced to be kept:")
     print("\033[32m-","\n-".join(forced), "\033[0m\n", sep="")
 
-DEBUG(sorted(prices.items(),key = lambda x : x[1]))
+PDEBUG(sorted(prices.items(),key = lambda x : x[1]))
 # validate_regex(regex, keep)
