@@ -45,12 +45,11 @@ keep    = [name for name, value in prices.items() if name not in sell]
 
 def print_prices(price_list: dict, force_keep: list):
     print(f"\033[31;4mPrice list:\033[0m")
-    lower_tres = 0.9 * treshold
-    upper_tres = 1.1 * treshold
 
     # Control Constants
     RED = '\033[31m'
     FORCED = '\033[34;1mforced - '
+    NFORCED = '\033[34;1m'
     GRE = '\033[32m'
     END = '\033[0m'
     longest_scarab_name_len = len(max(price_list.keys(), key=lambda x: len(x)))
@@ -59,13 +58,16 @@ def print_prices(price_list: dict, force_keep: list):
     price_list = sorted(price_list.items(), key=lambda x: x[1])
     
     for name, price in price_list:
-        if price >= upper_tres:
+        if price >= treshold:
             color = GRE
+            ncolor = END
         elif any(fk in name for fk in force_keep):
+            ncolor = NFORCED
             color = FORCED
         else:
             color = RED
-        print(f"{name.replace("^","").replace("$",""): <{longest_scarab_name_len}} {color}{price}c{END}")
+            ncolor = END
+        print(f"{ncolor}{name.replace("^","").replace("$",""): <{longest_scarab_name_len}}{END} {color}{price}c{END}")
     print("\033[31;1m---------------------\033[0m")
 
 def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
