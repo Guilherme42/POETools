@@ -5,7 +5,7 @@ Create a virtual environment with python:
 > python -m venv venv
 Activate it
 - Windows:
-> .\venv\Scritps\activate 
+> .\venv\Scripts\activate 
 - Linux:
 > source ./venv/bin/activate
 
@@ -14,5 +14,6 @@ Install required libs:
 
 
 ## Executing scripts
-> python \<**script name**\> \<**script argumnets**\>
+> python \<**script name**\> \<**script arguments**\>
+
 > 
