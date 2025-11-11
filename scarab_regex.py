@@ -30,7 +30,7 @@ treshold = args.treshold
 LIMIT = int(args.limit)
 RED     = '\033[31m'
 REDB    = '\033[31;1m'
-REDBB    = '\033[31;1,4m'
+REDBB   = '\033[31;1,4m'
 REG     = '\033[33;1m'
 GRE     = '\033[32m'
 FORCED  = '\033[34;1mforced - '
@@ -166,8 +166,8 @@ def validate_regex(orig_regex: str, scarabs_to_be_kept: List[str]) -> bool:
     PDEBUG(keep)
 
     DEBUG("Both lists should be the same length if original regex starts with '!' otherwise, the final list's length should be 0.")
-    DEBUG(f"Len1: \033[31m{len(keep_pre)}\033[0m, len2: \033[31m{len(keep)}\033[0m. Has negation?: \033[31m{highlight_keep_scarabs}\033[0m")
-    DEBUG(f"Original regex:\n\033[34m{orig_regex}\033[0m")
+    DEBUG(f"Len1: {RED}{len(keep_pre)}{END}, len2: {RED}{len(keep)}{END}. Has negation?: {RED}{highlight_keep_scarabs}{END}")
+    DEBUG(f"Original regex:\n{NFORCED}{orig_regex}{END}")
     # returns True if there are no valuable scarabs being falsely appointed to be removed 
     return len(keep) == len(keep_pre) if highlight_keep_scarabs else len(keep) == 0
 
@@ -271,7 +271,7 @@ inverted_regex = format_regex(inverted_regexes, True)
 # Select the regexes with the smallest total characters count
 regexes, negate = (normal_regexes, False) if len(normal_regex) <= len(inverted_regex) else (inverted_regexes, True)
 
-text_to_print = "\033[31;1mRegex to Paste:\033[0m\n"
+text_to_print = f"{REDB}Regex to Paste:{END}\n"
 
 # Print the regex in parts to abide by the POE regex character limit
 # print("\033[31;1mRegex to Paste:\033[0m")
@@ -283,9 +283,9 @@ for reg in regexes:
          regex = format_regex(set(last_regexes), negate)
          re.compile(regex)
          if not validate_regex(regex, keep):
-             print("\033[31;1;5m---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!\033[0m")
+             print(f"{REDBB}---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!{END}")
              quit()
-         text_to_print += f"\033[33;1m{regex}\033[0m\n"
+         text_to_print += f"{REG}{regex}{END}\n"
          last_regexes = [reg]
      else:
          last_regexes.append(reg)
@@ -296,16 +296,16 @@ if last_regexes:
         print(f"{REDB}---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!{END}")
         print(f"{NFORCED}broken regex: {regex}{END}")
         quit()
-    text_to_print += f"\033[33;1m{regex}\033[0m\n"
-text_to_print += "\033[31;1m---------------------\033[0m"
+    text_to_print += f"{REG}{regex}{END}\n"
+text_to_print += f"{REDB}---------------------{END}"
 
 print(f"\n{text_to_print}")
 
 # Sanity check that shows which scarabs are forced to be kept. 
 # Useful to debug regex matches
 if forced:
-    print("\033[34;1mScarabs forced to be kept:")
-    print("\033[32m-","\n-".join(forced), "\033[0m\n", sep="")
+    print(f"{NFORCED}Scarabs forced to be kept:{END}")
+    print(f"{GRE}-","\n-".join(forced), f"{END}\n", sep="")
 
 if args.flip:
     print("")
