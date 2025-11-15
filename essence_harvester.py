@@ -18,9 +18,16 @@ league = get("https://poe.ninja/poe1/api/data/index-state").json()["economyLeagu
 
 # Get the updated price of each scarab in chaos
 db = get(f"https://poe.ninja/poe1/api/economy/exchange/current/overview?league={league}&type=Essence").json()
+db_lifeforce = get(f"https://poe.ninja/poe1/api/economy/exchange/current/overview?league={league}&type=Currency").json()
+
+lifeforce_names = {item["id"]: item["name"] for item in db_lifeforce["items"] if "Lifeforce" in item['name']}
+lifeforce_prices = {lifeforce_names[item['id']]: item["primaryValue"] for item in db_lifeforce['lines'] if item['id'] in lifeforce_names.keys()}
+
 names = {item["id"]: item["name"] for item in db["items"]}
 names = {id: f"^{name.lower()}$" for id, name in names.items()}
 prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
+prices_deafening = {n: p for n, p in prices.items() if "deafening" in n}
+
 
 def calc_EV(prices: dict, essence: str) -> float:
     target_essence_price = prices[f'^{essence}$'] if essence[-1] != '$' else prices[essence]
@@ -41,12 +48,13 @@ NFORCED = '\033[34;1m'
 END     = '\033[0m'
 
 
-def print_all(prices: dict):
+def print_all(prices: dict, primal_lifeforce_cost: float):
+    lf_cost = 30*primal_lifeforce_cost
     longest_essence_name_len = len(max(prices, key=len)[1:-1])
     prices_sort = sorted(prices.items(), key = lambda x: x[1], reverse=True)
     for essence,_ in prices_sort:
         EV = calc_EV(prices, essence)
-        color = RED if EV <= 0 else GRE
-        print(f'{essence[1:-1]: <{longest_essence_name_len}}\t\t{color}{EV}{END}')
+        color = RED if EV <= lf_cost else GRE
+        print(f'{essence[1:-1]: <{longest_essence_name_len}}\t\t{color}{EV-lf_cost}{END}')
 
-print_all(prices)
+print_all(prices_deafening, lifeforce_prices['Primal Crystallised Lifeforce'])
