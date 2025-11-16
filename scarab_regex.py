@@ -48,15 +48,6 @@ names = {id: f"^{name.lower()}$" for id, name in names.items()}
 prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 
 # Find the scarabs that are too cheap to be worth selling
-# forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
-# sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
-# keep    = [name for name, value in prices.items() if name not in sell]
-# forced  = [f[1:-1] for f in forced]
-# DEBUG(forced)
-# DEBUG(sell)
-# DEBUG(keep)
-
-# Find the scarabs that are too cheap to be worth selling
 def update_lists(prices: dict, forced: list) -> List[list]:
     forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
     sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
