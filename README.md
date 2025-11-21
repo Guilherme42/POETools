@@ -1,16 +1,17 @@
 # POETools
 
 ## Preparing the environment
-Create a virtual environment with python:
-> python -m venv venv
+Create a virtual environment with python's UV package manager:
+> pip install uv
+> uv venv
 Activate it
 - Windows:
-> .\venv\Scripts\activate 
+> .\.venv\Scripts\activate 
 - Linux:
-> source ./venv/bin/activate
+> source ./.venv/bin/activate
 
 Install required libs:
-> pip install -r requirements.txt
+> uv sync
 
 
 ## Executing scripts
