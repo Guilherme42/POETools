@@ -77,7 +77,7 @@ def print_prices(price_list: dict, force_keep: list = []) -> list:
         if price >= treshold:
             color = GRE
             ncolor = END
-        elif any(fk in name for fk in force_keep):
+        elif any(fk == name for fk in force_keep):
             ncolor = NFORCED
             color = FORCED
         else:
@@ -249,6 +249,7 @@ def format_regex(items: Set[str], negate: bool) -> str:
     DEBUG(regex)
     regex = f"\"{'!' if negate else ''}{'^' if has_start else ''}{'(' if has_start or has_end else ''}{regex}{')' if has_start or has_end else ''}{'$' if has_end else ''}\""
     return regex
+
 # Prints price list
 if args.print_prices:
     print_prices(prices, forced)
