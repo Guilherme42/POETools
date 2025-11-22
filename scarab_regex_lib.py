@@ -39,6 +39,7 @@ class scarab_regexer():
 
     def update_value_treshold(self, new_treshold: float):
         self.__value_treshold = float(new_treshold)
+        self.update_lists()
 
     def print_forced(self):
         print(f"{NFORCED}Scarabs forced to be kept:{END}")
@@ -65,7 +66,7 @@ class scarab_regexer():
     def update_lists(self):
         self.get_prices()
         self.forced  = [name for name, _     in self.prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in self.force_keep)]
-        self.sell    = [name for name, value in self.prices.items() if value < self.__value_treshold and name not in self.force_keep]
+        self.sell    = [name for name, value in self.prices.items() if value < self.__value_treshold and name not in self.forced]
         self.keep    = [name for name, _     in self.prices.items() if name not in self.sell]
         # removes the ^$ from the forced names, for readability
         self.forced  = [f[1:-1] for f in self.forced]
@@ -339,7 +340,7 @@ if __name__ == "__main__":
         sr.print_prices()
     
     sr.gen_scarab_regex()
-    
+
     if sr.forced:
         sr.print_forced()
     
