@@ -30,7 +30,7 @@ treshold = args.treshold
 LIMIT = int(args.limit)
 RED     = '\033[31m'
 REDB    = '\033[31;1m'
-REDBB   = '\033[31;1,4m'
+REDBB   = '\033[31;1;4m'
 REG     = '\033[33;1m'
 GRE     = '\033[32m'
 FORCED  = '\033[34;1mforced - '
@@ -49,7 +49,7 @@ prices = {names[item["id"]]: item["primaryValue"] for item in db["lines"]}
 
 # Find the scarabs that are too cheap to be worth selling
 def update_lists(prices: dict, forced: list) -> List[list]:
-    forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in args.force_keep)]
+    forced  = [name for name, value in prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in forced)]
     sell    = [name for name, value in prices.items() if value < treshold and name not in forced]
     keep    = [name for name, value in prices.items() if name not in sell]
     forced  = [f[1:-1] for f in forced]
@@ -60,12 +60,11 @@ def update_lists(prices: dict, forced: list) -> List[list]:
     DEBUG("keep:")
     DEBUG(keep)
 
-
     return [sell, keep, forced]
 sell, keep, forced = update_lists(prices=prices, forced=args.force_keep)
 
 def print_prices(price_list: dict, force_keep: list = []) -> list:
-    print(f"\033[31;4mPrice list:\033[0m")
+    print(f"{REDBB}Price list:{END}")
 
     # Control Constants
     longest_scarab_name_len = len(max(price_list.keys(), key=lambda x: len(x)))
@@ -99,8 +98,6 @@ def get_cheapest_n(price_list: dict, N: int) -> str:
     print(f"{RED}cheapest {NFORCED}{N}{END} {RED}scarabs:{END}")
     print(f"{REG}{positive_reg}{END}")
     print_prices({it: price_list[it] for it in price_list if it in to_vendor})
-    
-        
 
 def get_all_regexes(includes: List[str], excludes: List[str]) -> dict:
     # Concatenate all the names of the scarabs to exclude so it is easier to check if a sub-string is present
