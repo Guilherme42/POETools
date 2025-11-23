@@ -141,7 +141,7 @@ async def scarab_prices(interaction: dc.Interaction, treshold: float = 0.0):
         description=f"{list_price(sr.prices, sr.sell)}",
         colour=0x24c1ff
         )
-    embedb.set_thumbnail("https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
+    embedb.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
     embeda = dc.Embed(
         title="Above treshold:",
         description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
