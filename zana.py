@@ -24,6 +24,7 @@ class myBot(commands.Bot):
 bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1")
 
 wikilink    = f"http://www.poewiki.net/wiki/"
+wikipure    = f"http://www.poewiki.net/"
 searchlink  = f"http://www.poewiki.net/w/api.php"
 
 
@@ -65,13 +66,46 @@ async def on_message(ctx: dc.message.Message):
     # Check if the message contains the [[ ]] tag to search.
     pattern = r"\[\[(.*?)\]\]"
     matches = re.search(pattern, ctx.content)
+    closest_match = ""
     if matches:
-        print(f"match: {matches}")
-        print(f"possible search for {matches.group(1)}: {wikilink}{matches.group(1).replace(' ','_')}")
-        await ctx.channel.send(f"{wikilink}{matches.group(1).replace(' ','_')}")
-
+        # print(f"match: {matches}")
+        # print(f"possible search for {matches.group(1)}: {wikilink}{matches.group(1).replace(' ','_')}")
+        # await ctx.channel.send(f"{wikilink}{matches.group(1).replace(' ','_')}")
+        ret = await search_wiki_titles(matches.group(1), limit = 20)
+        closest_match = ret[0] if ret else ""
+    if closest_match:    
+        wikiexists = f'{wikilink}{closest_match.replace(' ','_')}'
+        embed = await create_embed_from_wiki(closest_match, wikiexists)
+        if embed:
+            await ctx.channel.send(embed=embed)
     # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
     await bot.process_commands(ctx)
+
+async def create_embed_from_wiki(title: str, url: str) -> dc.Embed:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                data = await resp.text()
+                soup = bs(data, 'html.parser')
+                allp = soup.find('div', class_='mw-parser-output').find_all('p')
+                text_snippet = '\n'.join([p.get_text() for p in allp])
+                if len(text_snippet) > 700:
+                    text_snippet = text_snippet[:700] + '...' # grabs 700 initial characters
+                # checks if there is an item card
+                embed = dc.Embed(
+                    color=dc.Color.blurple(),
+                    title=f"Wiki: {title}",
+                    description=text_snippet,
+                    url=url
+                )
+                item_card = soup.find("span", class_ = lambda c: c and c.startswith("item-box"))
+                if item_card:
+                    imglink = item_card.find('img').get('src')
+                    print(f"{wikipure}{imglink}")
+                    embed.set_image(url=f"{wikipure}{imglink}")
+            else:
+                return None
+    return embed
 
 def list_price(price_list: Dict[str, float], names: List[str]) -> str:
     returnstr = "```python\n"
@@ -117,7 +151,6 @@ async def scarab_prices(interaction: dc.Interaction, treshold: float = 0.0):
     await interaction.response.send_message(embed=embedb)
     await interaction.followup.send(embed=embeda)
     
-
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands." )
 async def reload_commands(interaction: dc.Interaction):
     if interaction.user.id != tk.ME:
@@ -130,14 +163,38 @@ async def reload_commands(interaction: dc.Interaction):
 async def wiki(interaction: dc.Interaction, item: str):
     # Assemble url to fetch from the wiki.
     url = f"{wikilink}{item.replace(' ','_')}"
+    embed = await create_embed_from_wiki(item, url)
     # await scrape_wiki_for_item_card(url)
-    await interaction.response.send_message(url)
+    await interaction.response.send_message(embed=embed)
 
 @wiki.autocomplete("item")
 async def wiki_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
     if not current:
         return []
+    # Use the shared search helper to get ranked (title, score) pairs
+    ranked = await search_wiki_titles(current, limit=15)
+    # return only top 5 as Choices
+    return [dc.app_commands.Choice(name=title, value=title) for title in ranked[:5]]
+
+# Searches the wiki for titles, given a query
+async def search_wiki_titles(query: str, limit: int = 15) -> List[str]:
+    """Search the POE wiki for titles matching any of the words in `query`.
+
+    Returns a list of (title, score) tuples ordered by descending score.
+    The scoring considers both string similarity and how many query words appear in the title.
+    """
+    query = (query or "").strip()
+    if not query:
+        return []
+
+    words = [w for w in re.split(r"\s+", query.lower()) if w]
+    # Build a search that matches any of the words in the title (prefix match)
+    if words:
+        srsearch = " OR ".join([f"intitle:{w}*" for w in words])
+    else:
+        srsearch = query
+
     titles = []
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -145,27 +202,39 @@ async def wiki_autocomplete(interaction: dc.Interaction, current: str):
             params={
                 "action": "query",
                 "list": "search",
-                "srsearch": f"intitle:{current.lower()}*",
-                "srlimit": 15,
+                "srsearch": srsearch,
+                "srlimit": limit,
                 "format": "json"
             }
-        ) as resp2:
-            if resp2.status == 200:
-                data2 = await resp2.json()
-                print(data2)
-                more = [s['title'] for s in data2['query']['search'] if s['title']and not re.search(r"may refer to", s['snippet'])]
-                print(more)
+        ) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                results = data.get("query", {}).get("search", [])
+                more = [s.get('title') for s in results if s.get('title') and not re.search(r"may refer to", s.get('snippet', ''))]
                 titles.extend(more)
-    
-    print("titles:", titles)
-    # return [dc.app_commands.Choice(name=s['title'], value=s['title']) for s in data1["query"]["search"]]
-    rankedlist = sorted(
-        titles,
-        key = lambda title: difflib.SequenceMatcher(a=current.lower(), b=title.lower()).ratio(),
-        reverse=True
-    )
-    # returns only top 5 results
-    return [dc.app_commands.Choice(name=n, value=n) for n in rankedlist[:5]]
+
+    # deduplicate while preserving order
+    seen = set()
+    uniq = []
+    for t in titles:
+        if t not in seen:
+            seen.add(t)
+            uniq.append(t)
+
+    # rank: combine sequence matcher ratio and word overlap
+    ranked = []
+    qlow = query.lower()
+    for t in uniq:
+        tlow = t.lower()
+        ratio = difflib.SequenceMatcher(a=qlow, b=tlow).ratio()
+        words_in = sum(1 for w in words if w in tlow)
+        overlap = words_in / max(len(words), 1)
+        score = ratio * 0.6 + overlap * 0.4
+        ranked.append((t, score))
+
+    ranked.sort(key=lambda x: x[1], reverse=True)
+    # returns only the titles in rankingorder
+    return [r[0] for r in ranked] 
 
 async def scrape_wiki_for_item_card(item_url: str):
     async with aiohttp.ClientSession() as session:
