@@ -1,22 +1,27 @@
 # %%
-import re 
 import TOKENS as tk
-import time
+import scarab_regex_lib as srl
 
+import re 
+import time, datetime
 import discord as dc
 from discord.ext import commands
 import aiohttp
 from bs4 import BeautifulSoup as bs
 import difflib
+from typing import Union, Dict, List
 
 intents = dc.Intents.default()
 intents.message_content = True
+
+DE_COLOR = lambda x: re.sub(r'\033\[(\d+;?)+m', x)
+
 
 class myBot(commands.Bot):
     async def setup_hook(self):
         await self.add_cog(Funcs(self))
 
-bot = myBot(command_prefix="!", intents=intents, description="Searches poewiki for [[item name]] and returns the first result.")
+bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1")
 
 wikilink    = f"http://www.poewiki.net/wiki/"
 searchlink  = f"http://www.poewiki.net/w/api.php"
@@ -68,6 +73,50 @@ async def on_message(ctx: dc.message.Message):
     # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
     await bot.process_commands(ctx)
 
+def list_price(price_list: Dict[str, float], names: List[str]) -> str:
+    returnstr = "```python\n"
+    prices = price_list.items()
+    names = [n[1:-1] for n in names] # Removes regex anchors from names
+    largest_name = len(max(names, key=len))
+    for p in prices:
+        if p[0][1:-1] in names:
+            returnstr += f"{p[0][1:-1]: <{largest_name}} = {p[1]:.2f}c\n"
+    return returnstr + "```"
+
+@bot.tree.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
+async def scarab_regex(interaction: dc.Interaction, treshold: float = 0.0):
+    sr.update_value_treshold(treshold) if treshold else None
+    text = sr.gen_scarab_regex(print_now=False)
+    embed = dc.Embed(title="Regex generated",
+                      description=f"```{text}```",
+                      colour=0xf5ed00,
+                      timestamp=sr.get_last_updated())
+    embed.add_field(name="Price Threshold",
+                    value=f"{sr.get_treshold()}c\nLast updated:",
+                    inline=False)
+    embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjMiLCJzY2FsZSI6MX1d/64d9f06e78/SuperScarab3.png")
+    await interaction.response.send_message(embed=embed)
+
+@bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
+async def scarab_prices(interaction: dc.Interaction, treshold: float = 0.0):
+    sr.update_value_treshold(treshold) if treshold else None
+    sr.update_lists()
+
+    embedb = dc.Embed(
+        title="Below treshold:",
+        description=f"{list_price(sr.prices, sr.sell)}",
+        colour=0x24c1ff
+        )
+    embedb.set_thumbnail("https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
+    embeda = dc.Embed(
+        title="Above treshold:",
+        description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
+        colour=0x24c1ff,
+        timestamp=sr.get_last_updated()
+        )
+    await interaction.response.send_message(embed=embedb)
+    await interaction.followup.send(embed=embeda)
+    
 
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands." )
 async def reload_commands(interaction: dc.Interaction):
@@ -143,8 +192,9 @@ async def on_ready():
 ### --------------------------- Main Code Below ---------------------------- ### 
 
 if __name__ == "__main__":
-    import requests as rq
-    resp = rq.get("https://www.poewiki.net/wiki/Headhunter")
-    soup = bs(resp.text, 'html.parser')
-    item_card = soup.find("span", class_ = lambda c: c and c.startswith("item-box"))
+    # import requests as rq
+    # resp = rq.get("https://www.poewiki.net/wiki/Headhunter")
+    # soup = bs(resp.text, 'html.parser')
+    # item_card = soup.find("span", class_ = lambda c: c and c.startswith("item-box"))
+    sr = srl.scarab_regexer()
     bot.run(tk.BOT_TOKEN)
