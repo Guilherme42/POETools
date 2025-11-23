@@ -101,7 +101,8 @@ async def create_embed_from_wiki(title: str, url: str) -> dc.Embed:
                     description=text_snippet,
                     url=url
                 )
-                item_card = soup.find('div', class_="infobox-page-container").find("span", class_ = lambda c: c and c.startswith("item-box"))
+                item_card = soup.find('div', class_="infobox-page-container")
+                item_card = item_card.find("span", class_ = lambda c: c and c.startswith("item-box")) if item_card else None
                 if item_card:
                     imglink = item_card.find('img').get('src')
                     print(f"{wikipure}{imglink}")
