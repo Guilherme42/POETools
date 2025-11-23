@@ -172,7 +172,7 @@ async def wiki(interaction: dc.Interaction, item: str):
         embed = await create_embed_from_wiki(item, url)
     except Exception as e:
         await interaction.followup.send("Sorry... The command failed :(")
-        print(e)
+        raise e
         return
     # await scrape_wiki_for_item_card(url)
     # sends the response once ready
