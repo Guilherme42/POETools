@@ -177,7 +177,7 @@ async def wiki(interaction: dc.Interaction, item: str):
         return
     # await scrape_wiki_for_item_card(url)
     # sends the response once ready
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed, ephemeral=False)
 
 @wiki.autocomplete("item")
 async def wiki_autocomplete(interaction: dc.Interaction, current: str):
