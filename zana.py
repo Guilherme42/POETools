@@ -63,6 +63,11 @@ async def on_message(ctx: dc.message.Message):
     if ctx.author == bot.user:
         return
     
+    await check_message_for_embedded_wiki_query(ctx)
+    # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
+    await bot.process_commands(ctx)
+
+async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     # Check if the message contains the [[ ]] tag to search.
     pattern = r"\[\[(.*?)\]\]"
     matches = re.search(pattern, ctx.content)
@@ -78,8 +83,6 @@ async def on_message(ctx: dc.message.Message):
         embed = await create_embed_from_wiki(closest_match, wikiexists)
         if embed:
             await ctx.channel.send(embed=embed)
-    # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
-    await bot.process_commands(ctx)
 
 async def create_embed_from_wiki(title: str, url: str) -> dc.Embed:
     async with aiohttp.ClientSession() as session:
@@ -161,11 +164,14 @@ async def reload_commands(interaction: dc.Interaction):
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the item and returns the first result.")
 async def wiki(interaction: dc.Interaction, item: str):
+    # tells discord to wait a bit
+    await interaction.response.defer()
     # Assemble url to fetch from the wiki.
     url = f"{wikilink}{item.replace(' ','_')}"
     embed = await create_embed_from_wiki(item, url)
     # await scrape_wiki_for_item_card(url)
-    await interaction.response.send_message(embed=embed)
+    # sends the response once ready
+    await interaction.followup.send(embed=embed)
 
 @wiki.autocomplete("item")
 async def wiki_autocomplete(interaction: dc.Interaction, current: str):
