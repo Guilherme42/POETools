@@ -4,6 +4,7 @@ import pprint as pp
 import re
 import argparse
 import time
+import datetime
 
 DEBUGGER = False
 DEBUG = lambda x: print(x) if DEBUGGER else None
@@ -23,6 +24,7 @@ END     = '\033[0m'
 class scarab_regexer():
 
     __last_update: float = 0
+    __last_update_datetime = datetime.datetime.now()
     __char_limit: int = 250
     __value_treshold: float = 1.0
 
@@ -40,6 +42,12 @@ class scarab_regexer():
     def update_value_treshold(self, new_treshold: float):
         self.__value_treshold = float(new_treshold)
         self.update_lists()
+
+    def get_last_updated(self) -> str:
+        return self.__last_update_datetime
+    
+    def get_treshold(self):
+        return self.__value_treshold
 
     def print_forced(self):
         print(f"{NFORCED}Scarabs forced to be kept:{END}")
@@ -60,6 +68,7 @@ class scarab_regexer():
             # Sort price list from cheapest to most expensive
             self.prices = {it[0]: it[1] for it in sorted(self.prices.items(), key=lambda x: x[1])}
             self.__last_update = now
+            self.__last_update_datetime = datetime.datetime.now()
             self.update_lists()
     
     # updates the keep, sell and forced lists
@@ -270,6 +279,7 @@ class scarab_regexer():
         # Select the regexes with the smallest total characters count
         regexes, negate = (normal_regexes, False) if len(normal_regex) <= len(inverted_regex) else (inverted_regexes, True)
         text_to_print = f"{REDB}Regex to Paste:{END}\n"
+        text_to_return = ""
         # Print the regex in parts to abide by the POE regex character limit
         last_regexes = []
         for reg in regexes:
@@ -282,7 +292,8 @@ class scarab_regexer():
                     text_to_print =  f"{REDBB}---->>> Some valuable scarabs are being marked to be vendored!! Aborting! <<<----\nContact devs to debug the issue!!{END}\n"
                     text_to_print += f"{NFORCED}broken regex: {regex}{END}\n"
                     return text_to_print
-                text_to_print += f"{REG}{regex}{END}\n"
+                text_to_print  += f"{REG}{regex}{END}\n"
+                text_to_return += f"{regex}\n"
                 last_regexes = [reg]
             else:
                 last_regexes.append(reg)
@@ -294,9 +305,10 @@ class scarab_regexer():
                 text_to_print += f"{NFORCED}broken regex: {regex}{END}\n"
                 return text_to_print
             text_to_print += f"{REG}{regex}{END}\n"
+            text_to_return += f"{regex}"
         text_to_print += f"{REDB}---------------------{END}"
         print(text_to_print) if print_now else None
-        return text_to_print
+        return text_to_return
 
     # Prints the regex to highlight cheapest N scarabs to vendor 
     def get_cheapest_n(self, N: int, print_now = True) -> str:
