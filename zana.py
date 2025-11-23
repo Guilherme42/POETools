@@ -21,7 +21,7 @@ class myBot(commands.Bot):
     async def setup_hook(self):
         await self.add_cog(Funcs(self))
 
-bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1")
+bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1. You can embed wiki queries into messages with [[item]]")
 
 wikilink    = f"http://www.poewiki.net/wiki/"
 wikipure    = f"http://www.poewiki.net/"
@@ -162,7 +162,7 @@ async def reload_commands(interaction: dc.Interaction):
         await bot.tree.sync()
         await interaction.response.send_message("Commands reloaded. press Ctrl+R to refresh the command list.")
 
-@bot.tree.command(name="wiki", description="Searches poewiki for the item and returns the first result.")
+@bot.tree.command(name="wiki", description="Searches poewiki for the item. You can also embed queries with [[item]]")
 async def wiki(interaction: dc.Interaction, item: str):
     # tells discord to wait a bit
     await interaction.response.defer()
