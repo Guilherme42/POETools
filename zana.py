@@ -165,7 +165,7 @@ async def reload_commands(interaction: dc.Interaction):
 @bot.tree.command(name="wiki", description="Searches poewiki for the item. You can also embed queries with [[item]]")
 async def wiki(interaction: dc.Interaction, item: str):
     # tells discord to wait a bit
-    await interaction.response.defer()
+    await interaction.response.defer(ephemeral=True)
     # Assemble url to fetch from the wiki.
     url = f"{wikilink}{item.replace(' ','_')}"
     embed = await create_embed_from_wiki(item, url)
