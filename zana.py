@@ -176,6 +176,8 @@ async def wiki(interaction: dc.Interaction, item: str):
         raise e
         return
     # await scrape_wiki_for_item_card(url)
+    # deletes the ephemeral message
+    await interaction.delete_original_response()
     # sends the response once ready
     await interaction.channel.send(embed=embed)
 
