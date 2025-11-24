@@ -122,37 +122,39 @@ def list_price(price_list: Dict[str, float], names: List[str]) -> str:
     return returnstr + "```"
 
 @bot.tree.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
-async def scarab_regex(interaction: dc.Interaction, treshold: float = 0.0):
-    sr.update_value_treshold(treshold) if treshold else None
+async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
+    await interaction.response.defer() # acknowledges to discord that the message was received
+    sr.update_value_threshold(threshold) if threshold else None
     text = sr.gen_scarab_regex(print_now=False)
     embed = dc.Embed(title="Regex generated",
                       description=f"```{text}```",
                       colour=0xf5ed00,
                       timestamp=sr.get_last_updated())
     embed.add_field(name="Price Threshold",
-                    value=f"{sr.get_treshold()}c\nLast updated:",
+                    value=f"{sr.get_threshold()}c\nLast updated:",
                     inline=False)
     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjMiLCJzY2FsZSI6MX1d/64d9f06e78/SuperScarab3.png")
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
-async def scarab_prices(interaction: dc.Interaction, treshold: float = 0.0):
-    sr.update_value_treshold(treshold) if treshold else None
+async def scarab_prices(interaction: dc.Interaction, threshold: float = 0.0):
+    await interaction.response.defer() # acknowledges to discord that the message was received
+    sr.update_value_threshold(threshold) if threshold else None
     sr.update_lists()
 
     embedb = dc.Embed(
-        title="Below treshold:",
+        title="Below threshold:",
         description=f"{list_price(sr.prices, sr.sell)}",
         colour=0x24c1ff
         )
     embedb.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
     embeda = dc.Embed(
-        title="Above treshold:",
+        title="Above threshold:",
         description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
         colour=0x24c1ff,
         timestamp=sr.get_last_updated()
         )
-    await interaction.response.send_message(embed=embedb)
+    await interaction.followup.send(embed=embedb)
     await interaction.followup.send(embed=embeda)
     
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands." )
