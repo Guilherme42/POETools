@@ -26,7 +26,7 @@ class scarab_regexer():
     __last_update: float = 0
     __last_update_datetime = datetime.datetime.now()
     __char_limit: int = 250
-    __value_treshold: float = 1.0
+    __value_threshold: float = 1.0
 
     def __init__(self, force_keep: List[str] = []):
         self.force_keep = force_keep
@@ -39,15 +39,15 @@ class scarab_regexer():
         else:
             DEBUG(f"Invalid char limit: {new_limit}. Must be a positive integer.")
 
-    def update_value_treshold(self, new_treshold: float):
-        self.__value_treshold = float(new_treshold)
+    def update_value_threshold(self, new_threshold: float):
+        self.__value_threshold = float(new_threshold)
         self.update_lists()
 
     def get_last_updated(self) -> str:
         return self.__last_update_datetime
     
-    def get_treshold(self):
-        return self.__value_treshold
+    def get_threshold(self):
+        return self.__value_threshold
 
     def print_forced(self):
         print(f"{NFORCED}Scarabs forced to be kept:{END}")
@@ -75,7 +75,7 @@ class scarab_regexer():
     def update_lists(self):
         self.get_prices()
         self.forced  = [name for name, _     in self.prices.items() if any(re.search(p.lower(), name[1:-1]) is not None for p in self.force_keep)]
-        self.sell    = [name for name, value in self.prices.items() if value < self.__value_treshold and name not in self.forced]
+        self.sell    = [name for name, value in self.prices.items() if value < self.__value_threshold and name not in self.forced]
         self.keep    = [name for name, _     in self.prices.items() if name not in self.sell]
         # removes the ^$ from the forced names, for readability
         self.forced  = [f[1:-1] for f in self.forced]
@@ -98,7 +98,7 @@ class scarab_regexer():
 
         price_list_clean = [[name.replace("^","").replace("$",""), price] for name, price in pricelist]
         for name, price in price_list_clean:
-            if price >= self.__value_treshold:
+            if price >= self.__value_threshold:
                 color = GRE
                 ncolor = END
             elif any(fk == name for fk in self.forced):
@@ -330,7 +330,7 @@ class scarab_regexer():
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Script to generate suitable regex strings to highlight vendorable scarabs.")
-    ap.add_argument("-t", "--treshold", type=float, action="store", default=1, help="Cuttoff value for scarab price. Any below this will be highlighted")
+    ap.add_argument("-t", "--threshold", type=float, action="store", default=1, help="Cuttoff value for scarab price. Any below this will be highlighted")
     ap.add_argument("-l", "--limit", type=int, action="store", default=250, help="")
     ap.add_argument("-d", "--debug", action="store_true", help="Enables debug session", default=False)
     ap.add_argument("-p", "--print_prices", action="store_true", default=False, help="Prints latest price list.")
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     sr = scarab_regexer(force_keep=args.force_keep)
     
     # Constant values
-    sr.update_value_treshold(args.treshold)
+    sr.update_value_threshold(args.threshold)
     sr.update_char_limit(args.limit)
 
 
