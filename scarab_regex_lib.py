@@ -86,12 +86,12 @@ class scarab_regexer():
         self.update_lists()
     
     # prints the current price list to terminal
-    def print_prices(self, print_now = True, _price_overload: List[str] = []) -> str:
+    def print_prices(self, print_now = True, _price_overload: Dict[str,float] = {}) -> str:
         self.get_prices()
         printvar = ""
         printvar += f"{REDBB}Price list:{END}\n"
 
-        pricelist = self.prices.items() if not _price_overload else _price_overload
+        pricelist = self.prices.items() if not _price_overload else _price_overload.items()
 
         # Control Constants
         longest_scarab_name_len = len(max([p[0] for p in pricelist], key=lambda x: len(x)))
