@@ -158,7 +158,7 @@ async def scarab_prices(interaction: dc.Interaction):
     await interaction.followup.send(embed=embeda)
 
 @bot.tree.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
-async def scarab_prices(interaction: dc.Interaction, N: int = 5):
+async def scarab_flip(interaction: dc.Interaction, N: int = 5):
     await interaction.response.defer(ephemeral=True)
     sr.update_lists()
     text = sr.get_cheapest_n(N)
