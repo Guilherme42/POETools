@@ -137,26 +137,41 @@ async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
     await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
-async def scarab_prices(interaction: dc.Interaction, threshold: float = 0.0):
+async def scarab_prices(interaction: dc.Interaction):
     await interaction.response.defer() # acknowledges to discord that the message was received
-    sr.update_value_threshold(threshold) if threshold else None
+    sr.update_value_threshold(1)
     sr.update_lists()
 
     embedb = dc.Embed(
-        title="Below threshold:",
+        title="Below 1c:",
         description=f"{list_price(sr.prices, sr.sell)}",
         colour=0x24c1ff
         )
     embedb.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
     embeda = dc.Embed(
-        title="Above threshold:",
+        title="Above 1c:",
         description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
         colour=0x24c1ff,
         timestamp=sr.get_last_updated()
         )
     await interaction.followup.send(embed=embedb)
     await interaction.followup.send(embed=embeda)
-    
+
+@bot.tree.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
+async def scarab_prices(interaction: dc.Interaction, N: int = 5):
+    await interaction.response.defer(ephemeral=True)
+    sr.update_lists()
+    text = sr.get_cheapest_n(N)
+    embed = dc.Embed(
+        title="Scarab Faustus Flipper!",
+        colour=dc.Colour.brand_red(),
+        description=f"```{text}```\nLast updated:",
+        timestamp=sr.get_last_updated()
+    )
+    embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
+    await interaction.delete_original_response()
+    await interaction.channel.send(embed=embed)
+
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands." )
 async def reload_commands(interaction: dc.Interaction):
     if interaction.user.id != tk.ME:

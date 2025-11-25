@@ -326,7 +326,7 @@ class scarab_regexer():
         printvar += f"{REG}{positive_reg}{END}\n"
         printvar += self.print_prices(print_now=print_now, _price_overload = {it: self.prices[it] for it in self.prices if it in to_vendor})
         print(printvar) if print_now else None
-        return printvar
+        return positive_reg
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Script to generate suitable regex strings to highlight vendorable scarabs.")
