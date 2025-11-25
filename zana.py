@@ -172,13 +172,14 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
     await interaction.delete_original_response()
     await interaction.channel.send(embed=embed)
 
-@bot.tree.command(name="reload_commands", description="Reloads all bot commands." )
+@bot.tree.command(name="reload_commands", description="Reloads all bot commands.", guild=dc.Object(id=tk.GUILD))
 async def reload_commands(interaction: dc.Interaction):
+    interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
-        await interaction.response.send_message("You are not authorized to use this command.")
+        await interaction.followup.send("You are not authorized to use this command.")
     else:
         await bot.tree.sync()
-        await interaction.response.send_message("Commands reloaded. press Ctrl+R to refresh the command list.")
+        await interaction.followup.send("Commands reloaded. press Ctrl+R to refresh the command list.")
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the item. You can also embed queries with [[item]]")
 async def wiki(interaction: dc.Interaction, item: str):
@@ -284,8 +285,6 @@ async def scrape_wiki_for_item_card(item_url: str):
 
 @bot.event
 async def on_ready():
-    guild = dc.Object(id=tk.GUILD)
-    print("guild:", guild)
     print(f"Bot is ready to be used. Logged as {bot.user}")
 
 # %%
