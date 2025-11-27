@@ -123,9 +123,9 @@ def list_price(price_list: Dict[str, float], names: List[str]) -> str:
 
 @bot.tree.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
 async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
-    await interaction.response.defer() # acknowledges to discord that the message was received
+    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
     sr.update_value_threshold(threshold) if threshold else None
-    text = sr.gen_scarab_regex(print_now=False)
+    text = sr.gen_scarab_regex(print_now=False) 
     embed = dc.Embed(title="Regex generated",
                       description=f"```{text}```",
                       colour=0xf5ed00,
@@ -138,7 +138,7 @@ async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
 
 @bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
 async def scarab_prices(interaction: dc.Interaction):
-    await interaction.response.defer() # acknowledges to discord that the message was received
+    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
     sr.update_value_threshold(1)
     sr.update_lists()
 
@@ -159,7 +159,7 @@ async def scarab_prices(interaction: dc.Interaction):
 
 @bot.tree.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
 async def scarab_flip(interaction: dc.Interaction, n: int = 5):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
     sr.update_lists()
     text = sr.get_cheapest_n(n, False)
     embed = dc.Embed(
@@ -169,8 +169,7 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
         timestamp=sr.get_last_updated()
     )
     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
-    await interaction.delete_original_response()
-    await interaction.channel.send(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands.", guild=dc.Object(id=tk.GUILD))
 async def reload_commands(interaction: dc.Interaction):
@@ -268,6 +267,7 @@ async def search_wiki_titles(query: str, limit: int = 15) -> List[str]:
     # returns only the titles in rankingorder
     return [r[0] for r in ranked] 
 
+# DEPRECATED
 async def scrape_wiki_for_item_card(item_url: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(item_url) as resp:
