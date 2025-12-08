@@ -104,8 +104,8 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
             closest_match = ret[0] if ret else ""
             matchlist2.append((closest_match, wikilink2, True)) if closest_match else None
     
-    if matches_poe1 or matches_poe2: # checks if there are any embeds to be created    
-        all_matches:List[List[str,str,bool]] = matches_poe1 + matches_poe2
+    if matchlist1 or matchlist2: # checks if there are any embeds to be created    
+        all_matches:List[List[str,str,bool]] = matchlist1 + matchlist2
         for m in all_matches:
             wikiexists = f'{m[1]}{m[0].replace(' ','_')}'
             embed = await create_embed_from_wiki(m[0], wikiexists, m[2])
