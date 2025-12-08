@@ -84,27 +84,29 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     pattern_poe2 = r"<<([^<[]*?)>>"
     matches_poe2 = re.search(pattern_poe2, ctx.content)
     closest_match = ""
-    content = ""
+
+    matchlist1 = []
+    matchlist2 = []
 
     if matches_poe1:
-        content = matches_poe1.group(1)
-        ret = await search_wiki_titles(content, limit = 20)
-        closest_match = ret[0] if ret else ""
+        for m in matches_poe1.groups():
+            ret = await search_wiki_titles(m, limit = 5)
+            closest_match = ret[0] if ret else ""
+            matchlist1.append((closest_match, wikilink, False)) if closest_match else None
         is_poe2 = False
     elif matches_poe2:
-        content = matches_poe2.group(1)
-        ret = await search_wiki_titles(content, limit = 20)
-        closest_match = ret[0] if ret else ""
-        inside_link = wikilink2
-        is_poe2 = True
+        for m in matches_poe2.groups():
+            ret = await search_wiki_titles(m, limit = 5, searchlink_internal=searchlink2)
+            closest_match = ret[0] if ret else ""
+            matchlist2.append((closest_match, wikilink2, True)) if closest_match else None
     
-    if closest_match:    
-        wikiexists = f'{inside_link}{closest_match.replace(' ','_')}'
-        embed = await create_embed_from_wiki(closest_match, wikiexists, is_poe2)
-        if embed:
-            await ctx.channel.send(embed=embed, mention_author=True)
-    elif matches_poe1 or matches_poe2:
-        await ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
+    if matches_poe1 or matches_poe2: # checks if there are any embeds to be created    
+        all_matches:List[List[str,str,bool]] = matches_poe1 + matches_poe2
+        for m in all_matches:
+            wikiexists = f'{m[1]}{m[0].replace(' ','_')}'
+            embed = await create_embed_from_wiki(m[0], wikiexists, m[2])
+            if embed:
+                await ctx.channel.send(embed=embed)
 
 async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc.Embed:
     wikipure_internal = wikipure if not poe2 else wikipure2 
