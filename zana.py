@@ -103,7 +103,7 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
         embed = await create_embed_from_wiki(closest_match, wikiexists, True)
         if embed:
             await ctx.channel.send(embed=embed, mention_author=True)
-    else:
+    elif matches_poe1 or matches_poe2:
         await ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
 
 async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc.Embed:
