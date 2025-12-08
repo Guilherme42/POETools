@@ -80,10 +80,10 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     # Check if the message contains the [[ ]] tag to search.
     inside_link = wikilink
     pattern_poe1 = r"\[\[([^<[]*?)\]\]"
-    matches_poe1 = re.search(pattern_poe1, ctx.content)
+    matches_poe1 = re.findall(pattern_poe1, ctx.content)
     matches_poe1 = matches_poe1 if matches_poe1 else []
     pattern_poe2 = r"<<([^<[]*?)>>"
-    matches_poe2 = re.search(pattern_poe2, ctx.content)
+    matches_poe2 = re.findall(pattern_poe2, ctx.content)
     matches_poe2 = matches_poe2 if matches_poe2 else []
     closest_match = ""
 
@@ -97,7 +97,7 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
             closest_match = ret[0] if ret else ""
             matchlist1.append((closest_match, wikilink, False)) if closest_match else None
         is_poe2 = False
-    elif matches_poe2:
+    if matches_poe2:
         matches_poe2 = matches_poe2.groups()
         for m in matches_poe2:
             ret = await search_wiki_titles(m, limit = 5, searchlink_internal=searchlink2)
