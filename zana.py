@@ -67,7 +67,7 @@ async def on_message(ctx: dc.message.Message):
     if ctx.author == bot.user:
         return
     
-    if "<<emergency_reload_commands>>" in ctx.content:
+    if ">>emergency_reload_commands<<" in ctx.content and ctx.author.id == tk.ME:
         await bot.tree.sync()
         await ctx.reply("Emergency reload_commands issued.", delete_after=20)
     
