@@ -209,13 +209,13 @@ async def reload_commands(interaction: dc.Interaction):
         await interaction.followup.send("Commands reloaded. press Ctrl+R to refresh the command list.")
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
-async def wiki(interaction: dc.Interaction, item: str):
+async def wiki(interaction: dc.Interaction, query: str):
     # tells discord to wait a bit
     await interaction.response.defer(ephemeral=True)
     # Assemble url to fetch from the wiki.
     try:
-        url = f"{wikilink}{item.replace(' ','_')}"
-        embed = await create_embed_from_wiki(item, url)
+        url = f"{wikilink}{query.replace(' ','_')}"
+        embed = await create_embed_from_wiki(query, url)
     except Exception as e:
         await interaction.followup.send("Sorry... The command failed :(")
         raise e
@@ -226,7 +226,7 @@ async def wiki(interaction: dc.Interaction, item: str):
     # sends the response once ready
     await interaction.followup.send(embed=embed, ephemeral=True)
 
-@wiki.autocomplete("item")
+@wiki.autocomplete("query")
 async def wiki_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
     if not current:
@@ -237,13 +237,13 @@ async def wiki_autocomplete(interaction: dc.Interaction, current: str):
     return [dc.app_commands.Choice(name=title, value=title) for title in ranked[:5]]
 
 @bot.tree.command(name="wiki2", description="Searches poewiki2 for the term. You can embed in msg with <<query>> to make them visible for all")
-async def wiki2(interaction: dc.Interaction, item: str):
+async def wiki2(interaction: dc.Interaction, query: str):
     # tells discord to wait a bit
     await interaction.response.defer(ephemeral=True)
     # Assemble url to fetch from the wiki.
     try:
-        url = f"{wikilink2}{item.replace(' ','_')}"
-        embed = await create_embed_from_wiki(item, url, True)
+        url = f"{wikilink2}{query.replace(' ','_')}"
+        embed = await create_embed_from_wiki(query, url, True)
     except Exception as e:
         await interaction.followup.send("Sorry... The command failed :(")
         raise e
@@ -254,7 +254,7 @@ async def wiki2(interaction: dc.Interaction, item: str):
     # sends the response once ready
     await interaction.followup.send(embed=embed, ephemeral=True)
 
-@wiki2.autocomplete("item")
+@wiki2.autocomplete("query")
 async def wiki2_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
     if not current:
