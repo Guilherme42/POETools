@@ -195,7 +195,7 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="reload_commands", description="Reloads all bot commands.", gu)
+@bot.tree.command(name="reload_commands", description="Reloads all bot commands.")
 async def reload_commands(interaction: dc.Interaction):
     interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
