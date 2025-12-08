@@ -92,8 +92,8 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
         inside_link = wikilink2
     
     if closest_match:    
-        wikiexists = f'{wikilink}{closest_match.replace(' ','_')}'
-        embed = await create_embed_from_wiki(closest_match, wikiexists)
+        wikiexists = f'{inside_link}{closest_match.replace(' ','_')}'
+        embed = await create_embed_from_wiki(closest_match, wikiexists, wikipure2)
         if embed:
             await ctx.channel.send(embed=embed, mention_author=True)
     else:
