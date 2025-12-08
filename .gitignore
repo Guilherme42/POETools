@@ -134,3 +134,6 @@ dmypy.json
 # token file
 TOKENS.py
 uv.lock
+streamdeck_key.png
+scarab_prices.json
+scarab_weights.json

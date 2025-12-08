@@ -27,6 +27,10 @@ wikilink    = f"http://www.poewiki.net/wiki/"
 wikipure    = f"http://www.poewiki.net/"
 searchlink  = f"http://www.poewiki.net/w/api.php"
 
+wikilink2   = f"http://www.poe2wiki.net/wiki/"
+wikipure2    = f"http://www.poe2wiki.net/"
+searchlink2  = f"http://www.poe2wiki.net/w/api.php"
+
 
 class Funcs(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -69,22 +73,33 @@ async def on_message(ctx: dc.message.Message):
 
 async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     # Check if the message contains the [[ ]] tag to search.
-    pattern = r"\[\[(.*?)\]\]"
-    matches = re.search(pattern, ctx.content)
+    inside_link = wikilink
+    pattern_poe1 = r"\[\[(.*?)\]\]"
+    matches_poe1 = re.search(pattern_poe1, ctx.content)
+    pattern_poe2 = r"<<(.*?)>>"
+    matches_poe2 = re.search(pattern_poe2, ctx.content)
     closest_match = ""
-    if matches:
-        # print(f"match: {matches}")
-        # print(f"possible search for {matches.group(1)}: {wikilink}{matches.group(1).replace(' ','_')}")
-        # await ctx.channel.send(f"{wikilink}{matches.group(1).replace(' ','_')}")
-        ret = await search_wiki_titles(matches.group(1), limit = 20)
+    content = ""
+    if matches_poe1:
+        content = matches_poe1.group(1)
+        ret = await search_wiki_titles(content, limit = 20)
         closest_match = ret[0] if ret else ""
+
+    elif matches_poe2:
+        content = matches_poe2.group(1)
+        ret = await search_wiki_titles(content, limit = 20)
+        closest_match = ret[0] if ret else ""
+        inside_link = wikilink2
+    
     if closest_match:    
         wikiexists = f'{wikilink}{closest_match.replace(' ','_')}'
         embed = await create_embed_from_wiki(closest_match, wikiexists)
         if embed:
-            await ctx.channel.send(embed=embed)
+            await ctx.channel.send(embed=embed, mention_author=True)
+    else:
+        ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
 
-async def create_embed_from_wiki(title: str, url: str) -> dc.Embed:
+async def create_embed_from_wiki(title: str, url: str, wikipure_internal: str = wikipure) -> dc.Embed:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             if resp.status == 200:
@@ -105,8 +120,8 @@ async def create_embed_from_wiki(title: str, url: str) -> dc.Embed:
                 item_card = item_card.find("span", class_ = lambda c: c and c.startswith("item-box")) if item_card else None
                 if item_card:
                     imglink = item_card.find('img').get('src')
-                    print(f"{wikipure}{imglink}")
-                    embed.set_image(url=f"{wikipure}{imglink}")
+                    print(f"{wikipure_internal}{imglink}")
+                    embed.set_image(url=f"{wikipure_internal}{imglink}")
             else:
                 return None
     return embed
@@ -208,8 +223,37 @@ async def wiki_autocomplete(interaction: dc.Interaction, current: str):
     # return only top 5 as Choices
     return [dc.app_commands.Choice(name=title, value=title) for title in ranked[:5]]
 
+@bot.tree.command(name="wiki2", description="Searches poewiki2 for the item. You can also embed queries with [[item]]")
+async def wiki2(interaction: dc.Interaction, item: str):
+    # tells discord to wait a bit
+    await interaction.response.defer(ephemeral=True)
+    # Assemble url to fetch from the wiki.
+    try:
+        url = f"{wikilink2}{item.replace(' ','_')}"
+        embed = await create_embed_from_wiki(item, url, wikipure2)
+    except Exception as e:
+        await interaction.followup.send("Sorry... The command failed :(")
+        raise e
+        return
+    # await scrape_wiki_for_item_card(url)
+    # deletes the ephemeral message
+    await interaction.delete_original_response()
+    # sends the response once ready
+    await interaction.channel.send(embed=embed)
+
+@wiki2.autocomplete("item")
+async def wiki2_autocomplete(interaction: dc.Interaction, current: str):
+    current = current.strip()
+    if not current:
+        return []
+    # Use the shared search helper to get ranked (title, score) pairs
+    ranked = await search_wiki_titles(current, limit=15, searchlink_internal=searchlink2)
+    # return only top 5 as Choices
+    return [dc.app_commands.Choice(name=title, value=title) for title in ranked[:5]]
+
+
 # Searches the wiki for titles, given a query
-async def search_wiki_titles(query: str, limit: int = 15) -> List[str]:
+async def search_wiki_titles(query: str, limit: int = 15, searchlink_internal: str = searchlink) -> List[str]:
     """Search the POE wiki for titles matching any of the words in `query`.
 
     Returns a list of (title, score) tuples ordered by descending score.
@@ -229,7 +273,7 @@ async def search_wiki_titles(query: str, limit: int = 15) -> List[str]:
     titles = []
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            searchlink,
+            searchlink_internal,
             params={
                 "action": "query",
                 "list": "search",
