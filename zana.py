@@ -81,9 +81,9 @@ async def on_message(ctx: dc.message.Message):
 async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     # Check if the message contains the [[ ]] tag to search.
     inside_link = wikilink
-    pattern_poe1 = r"\[\[(.*?)\]\]"
+    pattern_poe1 = r"\[\[([^<[]*?)\]\]"
     matches_poe1 = re.search(pattern_poe1, ctx.content)
-    pattern_poe2 = r"<<(.*?)>>"
+    pattern_poe2 = r"<<([^<[]*?)>>"
     matches_poe2 = re.search(pattern_poe2, ctx.content)
     closest_match = ""
     content = ""
