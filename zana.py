@@ -91,14 +91,12 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     matchlist2 = []
 
     if matches_poe1:
-        matches_poe1 = matches_poe1.groups()
         for m in matches_poe1:
             ret = await search_wiki_titles(m, limit = 5)
             closest_match = ret[0] if ret else ""
             matchlist1.append((closest_match, wikilink, False)) if closest_match else None
         is_poe2 = False
     if matches_poe2:
-        matches_poe2 = matches_poe2.groups()
         for m in matches_poe2:
             ret = await search_wiki_titles(m, limit = 5, searchlink_internal=searchlink2)
             closest_match = ret[0] if ret else ""
