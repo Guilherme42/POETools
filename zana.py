@@ -224,7 +224,8 @@ async def wiki(interaction: dc.Interaction, item: str):
     # deletes the ephemeral message
     await interaction.delete_original_response()
     # sends the response once ready
-    await interaction.channel.send(embed=embed)
+    # await interaction.channel.send(embed=embed)
+    await interaction.followup(embed=embed)
 
 @wiki.autocomplete("item")
 async def wiki_autocomplete(interaction: dc.Interaction, current: str):
@@ -252,7 +253,8 @@ async def wiki2(interaction: dc.Interaction, item: str):
     # deletes the ephemeral message
     await interaction.delete_original_response()
     # sends the response once ready
-    await interaction.channel.send(embed=embed)
+    # await interaction.channel.send(embed=embed)
+    await interaction.followup(embed=embed)
 
 @wiki2.autocomplete("item")
 async def wiki2_autocomplete(interaction: dc.Interaction, current: str):
