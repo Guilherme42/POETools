@@ -222,9 +222,8 @@ async def wiki(interaction: dc.Interaction, item: str):
         return
     # await scrape_wiki_for_item_card(url)
     # deletes the ephemeral message
-    await interaction.delete_original_response()
+    # await interaction.delete_original_response()
     # sends the response once ready
-    # await interaction.channel.send(embed=embed)
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 @wiki.autocomplete("item")
@@ -251,9 +250,8 @@ async def wiki2(interaction: dc.Interaction, item: str):
         return
     # await scrape_wiki_for_item_card(url)
     # deletes the ephemeral message
-    await interaction.delete_original_response()
+    # await interaction.delete_original_response()
     # sends the response once ready
-    # await interaction.channel.send(embed=embed)
     await interaction.followup.send(embed=embed, ephemeral=True)
 
 @wiki2.autocomplete("item")
