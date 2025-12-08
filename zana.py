@@ -87,20 +87,22 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     matches_poe2 = re.search(pattern_poe2, ctx.content)
     closest_match = ""
     content = ""
+
     if matches_poe1:
         content = matches_poe1.group(1)
         ret = await search_wiki_titles(content, limit = 20)
         closest_match = ret[0] if ret else ""
-
+        is_poe2 = False
     elif matches_poe2:
         content = matches_poe2.group(1)
         ret = await search_wiki_titles(content, limit = 20)
         closest_match = ret[0] if ret else ""
         inside_link = wikilink2
+        is_poe2 = true
     
     if closest_match:    
         wikiexists = f'{inside_link}{closest_match.replace(' ','_')}'
-        embed = await create_embed_from_wiki(closest_match, wikiexists, True)
+        embed = await create_embed_from_wiki(closest_match, wikiexists, is_poe2)
         if embed:
             await ctx.channel.send(embed=embed, mention_author=True)
     elif matches_poe1 or matches_poe2:
