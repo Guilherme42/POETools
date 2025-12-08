@@ -57,8 +57,6 @@ class Funcs(commands.Cog):
             await ctx.send(f"<@{user.id}> has been successfully destroyed.")
         else:
             await ctx.send(f"No {user.display_name} found to destroy. :(")
-    # bot.add_command(destroy)
-    # bot.tree.add_command(destroy.app_command)
 
 
 @bot.event
@@ -98,7 +96,7 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
         ret = await search_wiki_titles(content, limit = 20)
         closest_match = ret[0] if ret else ""
         inside_link = wikilink2
-        is_poe2 = true
+        is_poe2 = True
     
     if closest_match:    
         wikiexists = f'{inside_link}{closest_match.replace(' ','_')}'
@@ -197,7 +195,7 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="reload_commands", description="Reloads all bot commands.")
+@bot.tree.command(name="reload_commands", description="Reloads all bot commands.", gu)
 async def reload_commands(interaction: dc.Interaction):
     interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
