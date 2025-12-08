@@ -97,7 +97,7 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
         if embed:
             await ctx.channel.send(embed=embed, mention_author=True)
     else:
-        ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
+        await ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
 
 async def create_embed_from_wiki(title: str, url: str, wikipure_internal: str = wikipure) -> dc.Embed:
     async with aiohttp.ClientSession() as session:
