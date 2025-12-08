@@ -208,7 +208,7 @@ async def reload_commands(interaction: dc.Interaction):
         await bot.tree.sync()
         await interaction.followup.send("Commands reloaded. press Ctrl+R to refresh the command list.")
 
-@bot.tree.command(name="wiki", description="Searches poewiki for the item. You can also embed queries with [[item]]")
+@bot.tree.command(name="wiki", description="Searches poewiki for the term. This will only show the result to you.You can also embed queries with [[query]] to make them visible for everyone")
 async def wiki(interaction: dc.Interaction, item: str):
     # tells discord to wait a bit
     await interaction.response.defer(ephemeral=True)
@@ -237,7 +237,7 @@ async def wiki_autocomplete(interaction: dc.Interaction, current: str):
     # return only top 5 as Choices
     return [dc.app_commands.Choice(name=title, value=title) for title in ranked[:5]]
 
-@bot.tree.command(name="wiki2", description="Searches poewiki2 for the item. You can also embed queries with [[item]]")
+@bot.tree.command(name="wiki2", description="Searches poewiki2 for the term. This will only show the result to you.You can also embed queries with <<query>> to make them visible for everyone")
 async def wiki2(interaction: dc.Interaction, item: str):
     # tells discord to wait a bit
     await interaction.response.defer(ephemeral=True)
