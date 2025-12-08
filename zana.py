@@ -67,12 +67,13 @@ async def on_message(ctx: dc.message.Message):
     if ctx.author == bot.user:
         return
     
-    await check_message_for_embedded_wiki_query(ctx)
-
-    # Emergency message that will reload commands in case the original is not working
     if "<<emergency_reload_commands>>" in ctx.content:
         await bot.tree.sync()
         await ctx.reply("Emergency reload_commands issued.", delete_after=20)
+    
+    await check_message_for_embedded_wiki_query(ctx)
+
+    # Emergency message that will reload commands in case the original is not working
 
     # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
     await bot.process_commands(ctx)
@@ -99,13 +100,14 @@ async def check_message_for_embedded_wiki_query(ctx: dc.message.Message):
     
     if closest_match:    
         wikiexists = f'{inside_link}{closest_match.replace(' ','_')}'
-        embed = await create_embed_from_wiki(closest_match, wikiexists, wikipure2)
+        embed = await create_embed_from_wiki(closest_match, wikiexists, True)
         if embed:
             await ctx.channel.send(embed=embed, mention_author=True)
     else:
         await ctx.reply(f"Could not find an entry with the following text: {content}.", delete_after=15)
 
-async def create_embed_from_wiki(title: str, url: str, wikipure_internal: str = wikipure) -> dc.Embed:
+async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc.Embed:
+    wikipure_internal = wikipure if not poe2 else wikipure2 
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             if resp.status == 200:
@@ -116,9 +118,10 @@ async def create_embed_from_wiki(title: str, url: str, wikipure_internal: str = 
                 if len(text_snippet) > 700:
                     text_snippet = text_snippet[:700] + '...' # grabs 700 initial characters
                 # checks if there is an item card
+                title_embed = f"Wiki: {title}" if not poe2 else f"Wiki poe2: {title}"
                 embed = dc.Embed(
                     color=dc.Color.blurple(),
-                    title=f"Wiki: {title}",
+                    title=title_embed,
                     description=text_snippet,
                     url=url
                 )
@@ -192,7 +195,7 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="reload_commands", description="Reloads all bot commands.", guild=dc.Object(id=tk.GUILD))
+@bot.tree.command(name="reload_commands", description="Reloads all bot commands.")
 async def reload_commands(interaction: dc.Interaction):
     interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
@@ -236,7 +239,7 @@ async def wiki2(interaction: dc.Interaction, item: str):
     # Assemble url to fetch from the wiki.
     try:
         url = f"{wikilink2}{item.replace(' ','_')}"
-        embed = await create_embed_from_wiki(item, url, wikipure2)
+        embed = await create_embed_from_wiki(item, url, True)
     except Exception as e:
         await interaction.followup.send("Sorry... The command failed :(")
         raise e
