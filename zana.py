@@ -68,6 +68,12 @@ async def on_message(ctx: dc.message.Message):
         return
     
     await check_message_for_embedded_wiki_query(ctx)
+
+    # Emergency message that will reload commands in case the original is not working
+    if "<<emergncy_reload_commands>>" in ctx.content:
+        await bot.tree.sync()
+        await ctx.reply("Emergency reload_commands issued.", delete_after=20)
+
     # on_message is an existing event that is being overwritten. This is needed to ensure the other ! commands still work.
     await bot.process_commands(ctx)
 
