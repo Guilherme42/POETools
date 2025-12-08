@@ -70,7 +70,7 @@ async def on_message(ctx: dc.message.Message):
     await check_message_for_embedded_wiki_query(ctx)
 
     # Emergency message that will reload commands in case the original is not working
-    if "<<emergncy_reload_commands>>" in ctx.content:
+    if "<<emergency_reload_commands>>" in ctx.content:
         await bot.tree.sync()
         await ctx.reply("Emergency reload_commands issued.", delete_after=20)
 
