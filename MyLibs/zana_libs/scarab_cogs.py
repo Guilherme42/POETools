@@ -11,7 +11,7 @@ import scarab_regex_lib as srl
 
 
 class scarab_cogs(commands.Cog):
-    async def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
     
     sr = srl.scarab_regexer()
