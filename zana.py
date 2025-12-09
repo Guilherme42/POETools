@@ -27,7 +27,7 @@ class myBot(commands.Bot):
     coglist = []
     def __init__(self, coglist: Iterable = [], *args, **kwargs):
         self.coglist = coglist
-        super(self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
     
     async def add_cogs(self, coglist: List[commands.Cog] = []):
         coglist = coglist + self.coglist
