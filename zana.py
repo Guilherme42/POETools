@@ -201,13 +201,12 @@ async def scarab_flip(interaction: dc.Interaction, n: int = 5):
 
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands.")
 async def reload_commands(interaction: dc.Interaction):
-    interaction.response.defer(ephemeral=True)
+    await interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
         await interaction.followup.send("You are not authorized to use this command.")
     else:
         await bot.tree.sync()
-        await interaction.delete_original_response()
-        await interaction.channel.send("Commands reloaded. press Ctrl+R to refresh the command list.", mention_author=True, delete_after=10)
+        await interaction.followup.send("Commands reloaded. press Ctrl+R to refresh the command list.")
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
 async def wiki(interaction: dc.Interaction, query: str):
