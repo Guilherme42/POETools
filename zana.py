@@ -254,7 +254,7 @@ async def add_new_cog_autocomplete(interaction: dc.Interaction, current: str):
     cogs = [str(c).split('/')[-1].replace('.py', '') for c in cogs]
     return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
 
-@bot.tree.command(name="remove_new_cog", description="Removes a cog from bot")
+@bot.tree.command(name="remove_cog", description="Removes a cog from bot")
 async def remove_cog(interaction: dc.Interaction, cog_name: str = ""):
     print("Test for journalctl")
     await interaction.response.defer(ephemeral=True)
