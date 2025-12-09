@@ -248,7 +248,7 @@ async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
 @add_new_cog.autocomplete("newcog_name")
 async def add_new_cog_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
-    if not current or interaction.user.id not in tk.allowed_devs:
+    if not current or interaction.user.id not in tk.ALLOWED_DEVS:
         return []
     cogs = list(pathlib.Path("MyLibs/zana_libs").glob(f"*{current}*.py"))
     cogs = [str(c).split('/')[-1].replace('.py', '') for c in cogs]
@@ -273,7 +273,7 @@ async def remove_cog(interaction: dc.Interaction, cog_name: str = ""):
 @remove_cog.autocomplete("cog_name")
 async def remove_cog_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
-    if not current or interaction.user.id not in tk.allowed_devs:
+    if not current or interaction.user.id not in tk.ALLOWED_DEVS:
         return []
     cogs = bot.cogs.keys()
     return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
