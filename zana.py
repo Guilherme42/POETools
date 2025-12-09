@@ -2,7 +2,7 @@
 import TOKENS as tk
 # import scarab_regex_lib as srl
 # Cogs
-import MyLibs.zana_libs.scarab_cogs as srl
+from MyLibs.zana_libs.scarab_cogs import scarab_cogs
 
 
 import re 
@@ -24,19 +24,22 @@ DE_COLOR = lambda x: re.sub(r'\033\[(\d+;?)+m', x)
 
 class myBot(commands.Bot):
 
-    # def __init__(self, coglist: Iterable = [], *args, **kwargs):
-    #     self.coglist = coglist
-    #     for c in self.coglist:
-    #         self.add_cog(c(self))
-    #     super(self).__init__(*args, **kwargs)
     coglist = []
+    def __init__(self, coglist: Iterable = [], *args, **kwargs):
+        self.coglist = coglist
+        super(self).__init__(*args, **kwargs)
     
-    async def add_cogs(self, coglist: List[commands.Cog]):
+    async def add_cogs(self, coglist: List[commands.Cog] = []):
+        coglist = coglist + self.coglist
         for cog in coglist:
-            self.add_cog(cog)
+            await self.add_cog(cog)
     
 
-bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1. You can embed wiki queries into messages with [[item]]")
+bot = myBot(
+    coglist= [scarab_cogs],
+    command_prefix="!", 
+    intents=intents, 
+    description="discord utilities for poe1. You can embed wiki queries into messages with [[item]]")
 
 wikilink    = f"http://www.poewiki.net/wiki/"
 wikipure    = f"http://www.poewiki.net/"
@@ -386,12 +389,14 @@ async def scrape_wiki_for_item_card(item_url: str):
 @bot.event
 async def on_ready():
     print(f"Bot is ready to be used. Logged as {bot.user}")
+    print("Loading cogs...")
+    for c in bot.coglist:
+        await bot.add_cog(c(bot))
 
 # %%
 ### --------------------------- Main Code Below ---------------------------- ### 
 
 if __name__ == "__main__":
     # sr = srl.scarab_regexer()
-    bot.add_cog([srl.scarab_cogs(bot)])
 
     bot.run(tk.BOT_TOKEN)
