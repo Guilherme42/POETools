@@ -221,7 +221,7 @@ async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc
 async def reload_commands(interaction: dc.Interaction):
     await interaction.response.defer(ephemeral=True)
 
-    if interaction.user.id != tk.ME:
+    if interaction.user.id not in tk.allowed_devs:
         await interaction.followup.send("You are not authorized to use this command.")
     else:
         await bot.tree.sync()
@@ -231,12 +231,12 @@ async def reload_commands(interaction: dc.Interaction):
 async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
     await interaction.response.defer(ephemeral=True)
     if interaction.user.id != tk.ME:
-        await interaction.followup.send("You are not authorized.")
+        await interaction.followup.send("You are not authorized to use this.")
         return
     try:
         mod = importlib.import_module(f"MyLibs.zana_libs.{newcog_name}")
         
-        if not bot.get_cog(newcog_name):
+        if newcog_name in bot.cogs.keys():
             await bot.remove_cog(newcog_name) # removes cog to add it again
         await bot.add_cog(getattr(mod,newcog_name)(bot))
         await interaction.followup.send(f"Added cog: {newcog_name}! Reload commands with /reload_commands and refresh with Ctrl+R")
@@ -246,13 +246,40 @@ async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
     
 #autocomplete to show which cogs are available.
 @add_new_cog.autocomplete("newcog_name")
-async def add_new_cog(interaction: dc.Interaction, current: str):
+async def add_new_cog_autocomplete(interaction: dc.Interaction, current: str):
     current = current.strip()
-    if not current:
+    if not current or interaction.user.id not in tk.allowed_devs:
         return []
     cogs = list(pathlib.Path("MyLibs/zana_libs").glob(f"*{current}*.py"))
     cogs = [str(c).split('/')[-1].replace('.py', '') for c in cogs]
     return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
+
+@bot.tree.command(name="remove_new_cog", description="Removes a cog from bot")
+async def remove_cog(interaction: dc.Interaction, cog_name: str = ""):
+    print("Test for journalctl")
+    await interaction.response.defer(ephemeral=True)
+    if interaction.user.id != tk.ME:
+        await interaction.followup.send("You are not authorized to use this.")
+        return
+    try:
+        if cog_name in bot.cogs.keys():
+            await bot.remove_cog(cog_name) # removes cog 
+        await interaction.followup.send(f"removed cog: {cog_name}! Reload commands with /reload_commands and refresh with Ctrl+R")
+    except Exception as e:
+        await interaction.followup.send(f"removing cog failed with the response: {e}")
+        raise e
+
+#autocomplete to show which cogs are available.
+@remove_cog.autocomplete("cog_name")
+async def remove_cog_autocomplete(interaction: dc.Interaction, current: str):
+    current = current.strip()
+    if not current or interaction.user.id not in tk.allowed_devs:
+        return []
+    cogs = bot.cogs.keys()
+    return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
+
+
+
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
 async def wiki(interaction: dc.Interaction, query: str):
