@@ -243,8 +243,8 @@ async def add_new_cog(interaction: dc.Interaction, current: str):
     current = current.strip()
     if not current:
         return []
-    cogs = list(pathlib.Path("MyLibs/zana_libs").glob("*.py"))
-    cogs = [c.replace('.py', '') for c in cogs]
+    cogs = list(pathlib.Path("MyLibs/zana_libs").glob(f"*{current}*.py"))
+    cogs = [str(c).split('/')[-1].replace('.py', '') for c in cogs]
     return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
