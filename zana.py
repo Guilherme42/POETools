@@ -232,6 +232,8 @@ async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
         return
     try:
         mod = importlib.import_module(f"MyLibs.zana_libs.{newcog_name}")
+        if not await bot.get_cog(newcog_name):
+            await bot.remove_cog(newcog_name) # removes cog to add it again
         await bot.add_cog(getattr(mod,newcog_name)(bot))
         await interaction.followup.send(f"Added cog: {newcog_name}! Reload commands with /reload_commands and refresh with Ctrl+R")
     except Exception as e:
