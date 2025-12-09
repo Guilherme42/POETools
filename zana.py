@@ -1,6 +1,7 @@
 # %%
 import TOKENS as tk
 # import scarab_regex_lib as srl
+# Cogs
 import MyLibs.zana_libs.scarab_cogs as srl
 
 
@@ -23,16 +24,16 @@ DE_COLOR = lambda x: re.sub(r'\033\[(\d+;?)+m', x)
 
 class myBot(commands.Bot):
 
-    async def __init__(self, coglist: Iterable = [], *args, **kwargs):
-        self.coglist = coglist
-        for c in self.coglist:
-            self.add_cog(c(self))
-        super(self).__init__(*args, **kwargs)
+    # def __init__(self, coglist: Iterable = [], *args, **kwargs):
+    #     self.coglist = coglist
+    #     for c in self.coglist:
+    #         self.add_cog(c(self))
+    #     super(self).__init__(*args, **kwargs)
+    coglist = []
     
-    async def add_cogs(self, coglist: Iterable):
+    async def add_cogs(self, coglist: List[commands.Cog]):
         for cog in coglist:
-            if cog not in self.coglist:
-                self.add_cog(cog)
+            self.add_cog(cog)
     
 
 bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1. You can embed wiki queries into messages with [[item]]")
@@ -231,9 +232,10 @@ async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
         return
     try:
         mod = importlib.import_module(f"MyLibs.zana_libs.{newcog_name}")
-        bot.add_cog(getattr(mod,newcog_name)(bot))
+        await bot.add_cog(getattr(mod,newcog_name)(bot))
+        await interaction.followup.send(f"Added cog: {newcog_name}! Reload commands with /reload_commands and refresh with Ctrl+R")
     except Exception as e:
-        interaction.followup.send(f"adding cog failed with the response: {e}")
+        await interaction.followup.send(f"adding cog failed with the response: {e}")
     
 #autocomplete to show which cogs are available.
 @add_new_cog.autocomplete("newcog_name")
@@ -386,6 +388,6 @@ async def on_ready():
 
 if __name__ == "__main__":
     # sr = srl.scarab_regexer()
-    bot.add_cogs([srl.scarab_cogs(bot)])
+    bot.add_cog([srl.scarab_cogs(bot)])
 
     bot.run(tk.BOT_TOKEN)
