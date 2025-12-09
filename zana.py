@@ -221,7 +221,7 @@ async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc
 async def reload_commands(interaction: dc.Interaction):
     await interaction.response.defer(ephemeral=True)
 
-    if interaction.user.id not in tk.allowed_devs:
+    if interaction.user.id not in tk.ALLOWED_DEVS:
         await interaction.followup.send("You are not authorized to use this command.")
     else:
         await bot.tree.sync()
@@ -277,8 +277,6 @@ async def remove_cog_autocomplete(interaction: dc.Interaction, current: str):
         return []
     cogs = bot.cogs.keys()
     return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
-
-
 
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
