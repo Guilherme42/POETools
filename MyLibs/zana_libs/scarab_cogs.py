@@ -26,7 +26,7 @@ class scarab_cogs(commands.Cog):
                 returnstr += f"{p[0][1:-1]: <{largest_name}} = {p[1]:.2f}c\n"
         return returnstr + "```"
 
-    @commands.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
+    @dc.app_commands.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
     async def scarab_regex(self, interaction: dc.Interaction, threshold: float = 0.0):
         await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
         self.sr.update_value_threshold(threshold) if threshold else None
@@ -41,7 +41,7 @@ class scarab_cogs(commands.Cog):
         embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjMiLCJzY2FsZSI6MX1d/64d9f06e78/SuperScarab3.png")
         await interaction.followup.send(embed=embed)
 
-    @commands.command(name="scarab_prices", description="Lists the latest scarab prices.")
+    @dc.app_commands.command(name="scarab_prices", description="Lists the latest scarab prices.")
     async def scarab_prices(self, interaction: dc.Interaction):
         await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
         self.sr.update_value_threshold(1)
@@ -62,7 +62,7 @@ class scarab_cogs(commands.Cog):
         await interaction.followup.send(embed=embedb)
         await interaction.followup.send(embed=embeda, ephemeral=True)
 
-    @commands.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
+    @dc.app_commands.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
     async def scarab_flip(self, interaction: dc.Interaction, n: int = 5):
         await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
         self.sr.update_lists()
