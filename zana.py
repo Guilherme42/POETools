@@ -1,6 +1,8 @@
 # %%
 import TOKENS as tk
-import scarab_regex_lib as srl
+# import scarab_regex_lib as srl
+import MyLibs.zana_libs.scarab_cogs as srl
+
 
 import re 
 import time, datetime
@@ -9,7 +11,9 @@ from discord.ext import commands
 import aiohttp
 from bs4 import BeautifulSoup as bs
 import difflib
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Iterable
+import importlib
+import pathlib
 
 intents = dc.Intents.default()
 intents.message_content = True
@@ -18,8 +22,18 @@ DE_COLOR = lambda x: re.sub(r'\033\[(\d+;?)+m', x)
 
 
 class myBot(commands.Bot):
-    async def setup_hook(self):
-        await self.add_cog(Funcs(self))
+
+    async def __init__(self, coglist: Iterable = [], *args, **kwargs):
+        self.coglist = coglist
+        for c in self.coglist:
+            self.add_cog(c(self))
+        super(self).__init__(*args, **kwargs)
+    
+    async def add_cogs(self, coglist: Iterable):
+        for cog in coglist:
+            if cog not in self.coglist:
+                self.add_cog(cog)
+    
 
 bot = myBot(command_prefix="!", intents=intents, description="discord utilities for poe1. You can embed wiki queries into messages with [[item]]")
 
@@ -32,7 +46,7 @@ wikipure2    = f"http://www.poe2wiki.net/"
 searchlink2  = f"http://www.poe2wiki.net/w/api.php"
 
 
-class Funcs(commands.Cog):
+class Destroy_Funcs(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
     
@@ -139,74 +153,97 @@ async def create_embed_from_wiki(title: str, url: str, poe2: bool = False) -> dc
                 return None
     return embed
 
-def list_price(price_list: Dict[str, float], names: List[str]) -> str:
-    returnstr = "```python\n"
-    prices = price_list.items()
-    names = [n[1:-1] for n in names] # Removes regex anchors from names
-    largest_name = len(max(names, key=len))
-    for p in prices:
-        if p[0][1:-1] in names:
-            returnstr += f"{p[0][1:-1]: <{largest_name}} = {p[1]:.2f}c\n"
-    return returnstr + "```"
+# def list_price(price_list: Dict[str, float], names: List[str]) -> str:
+#     returnstr = "```python\n"
+#     prices = price_list.items()
+#     names = [n[1:-1] for n in names] # Removes regex anchors from names
+#     largest_name = len(max(names, key=len))
+#     for p in prices:
+#         if p[0][1:-1] in names:
+#             returnstr += f"{p[0][1:-1]: <{largest_name}} = {p[1]:.2f}c\n"
+#     return returnstr + "```"
 
-@bot.tree.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
-async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
-    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
-    sr.update_value_threshold(threshold) if threshold else None
-    text = sr.gen_scarab_regex(print_now=False) 
-    embed = dc.Embed(title="Regex generated",
-                      description=f"```{text}```",
-                      colour=0xf5ed00,
-                      timestamp=sr.get_last_updated())
-    embed.add_field(name="Price Threshold",
-                    value=f"{sr.get_threshold()}c\nLast updated:",
-                    inline=False)
-    embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjMiLCJzY2FsZSI6MX1d/64d9f06e78/SuperScarab3.png")
-    await interaction.followup.send(embed=embed)
+# @bot.tree.command(name="scarab_regex", description="Generates regex to vendor scarabs.")
+# async def scarab_regex(interaction: dc.Interaction, threshold: float = 0.0):
+#     await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
+#     sr.update_value_threshold(threshold) if threshold else None
+#     text = sr.gen_scarab_regex(print_now=False) 
+#     embed = dc.Embed(title="Regex generated",
+#                       description=f"```{text}```",
+#                       colour=0xf5ed00,
+#                       timestamp=sr.get_last_updated())
+#     embed.add_field(name="Price Threshold",
+#                     value=f"{sr.get_threshold()}c\nLast updated:",
+#                     inline=False)
+#     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjMiLCJzY2FsZSI6MX1d/64d9f06e78/SuperScarab3.png")
+#     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
-async def scarab_prices(interaction: dc.Interaction):
-    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
-    sr.update_value_threshold(1)
-    sr.update_lists()
+# @bot.tree.command(name="scarab_prices", description="Lists the latest scarab prices.")
+# async def scarab_prices(interaction: dc.Interaction):
+#     await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
+#     sr.update_value_threshold(1)
+#     sr.update_lists()
 
-    embedb = dc.Embed(
-        title="Below 1c:",
-        description=f"{list_price(sr.prices, sr.sell)}",
-        colour=0x24c1ff
-        )
-    embedb.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
-    embeda = dc.Embed(
-        title="Above 1c:",
-        description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
-        colour=0x24c1ff,
-        timestamp=sr.get_last_updated()
-        )
-    await interaction.followup.send(embed=embedb)
-    await interaction.followup.send(embed=embeda, ephemeral=True)
+#     embedb = dc.Embed(
+#         title="Below 1c:",
+#         description=f"{list_price(sr.prices, sr.sell)}",
+#         colour=0x24c1ff
+#         )
+#     embedb.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjciLCJzY2FsZSI6MX1d/28b95bae7b/SuperScarab7.png")
+#     embeda = dc.Embed(
+#         title="Above 1c:",
+#         description=f"{list_price(sr.prices, sr.keep)}\nLast updated:",
+#         colour=0x24c1ff,
+#         timestamp=sr.get_last_updated()
+#         )
+#     await interaction.followup.send(embed=embedb)
+#     await interaction.followup.send(embed=embeda, ephemeral=True)
 
-@bot.tree.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
-async def scarab_flip(interaction: dc.Interaction, n: int = 5):
-    await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
-    sr.update_lists()
-    text = sr.get_cheapest_n(n, False)
-    embed = dc.Embed(
-        title="Scarab Faustus Flipper!",
-        colour=dc.Colour.brand_red(),
-        description=f"```{text}```\nLast updated:",
-        timestamp=sr.get_last_updated()
-    )
-    embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
-    await interaction.followup.send(embed=embed)
+# @bot.tree.command(name="scarab_flip", description="Provides regex with the cheapest N scarabs. Default 5")
+# async def scarab_flip(interaction: dc.Interaction, n: int = 5):
+#     await interaction.response.defer(ephemeral=True) # acknowledges to discord that the message was received. Ephemeral so only the person who sent the message can see it
+#     sr.update_lists()
+#     text = sr.get_cheapest_n(n, False)
+#     embed = dc.Embed(
+#         title="Scarab Faustus Flipper!",
+#         colour=dc.Colour.brand_red(),
+#         description=f"```{text}```\nLast updated:",
+#         timestamp=sr.get_last_updated()
+#     )
+#     embed.set_thumbnail(url="https://web.poecdn.com/gen/image/WzI1LDE0LHsiZiI6IjJESXRlbXMvQ3VycmVuY3kvU2NhcmFicy9TdXBlclNjYXJhYjEiLCJzY2FsZSI6MX1d/acc1b258a3/SuperScarab1.png")
+#     await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="reload_commands", description="Reloads all bot commands.")
 async def reload_commands(interaction: dc.Interaction):
     await interaction.response.defer(ephemeral=True)
+
     if interaction.user.id != tk.ME:
         await interaction.followup.send("You are not authorized to use this command.")
     else:
         await bot.tree.sync()
         await interaction.followup.send("Commands reloaded. press Ctrl+R to refresh the command list.")
+
+@bot.tree.command(name="add_new_cog", description="Adds a new cog")
+async def add_new_cog(interaction: dc.Interaction, newcog_name: str = ""):
+    await interaction.response.defer(ephemeral=True)
+    if interaction.user.id != tk.ME:
+        await interaction.followup.send("You are not authorized.")
+        return
+    try:
+        mod = importlib.import_module(f"MyLibs.zana_libs.{newcog_name}")
+        bot.add_cog(getattr(mod,newcog_name)(bot))
+    except Exception as e:
+        interaction.followup.send(f"adding cog failed with the response: {e}")
+    
+#autocomplete to show which cogs are available.
+@add_new_cog.autocomplete("newcog_name")
+async def add_new_cog(interaction: dc.Interaction, current: str):
+    current = current.strip()
+    if not current:
+        return []
+    cogs = list(pathlib.Path("MyLibs/zana_libs").glob("*.py"))
+    cogs = [c.replace('.py', '') for c in cogs]
+    return [dc.app_commands.Choice(name=c, value=c) for c in cogs]
 
 @bot.tree.command(name="wiki", description="Searches poewiki for the term. You can embed in msg with [[query]] to make them visible for all")
 async def wiki(interaction: dc.Interaction, query: str):
@@ -348,9 +385,7 @@ async def on_ready():
 ### --------------------------- Main Code Below ---------------------------- ### 
 
 if __name__ == "__main__":
-    # import requests as rq
-    # resp = rq.get("https://www.poewiki.net/wiki/Headhunter")
-    # soup = bs(resp.text, 'html.parser')
-    # item_card = soup.find("span", class_ = lambda c: c and c.startswith("item-box"))
-    sr = srl.scarab_regexer()
+    # sr = srl.scarab_regexer()
+    bot.add_cogs([srl.scarab_cogs(bot)])
+
     bot.run(tk.BOT_TOKEN)
